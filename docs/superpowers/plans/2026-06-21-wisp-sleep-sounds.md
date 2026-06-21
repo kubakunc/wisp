@@ -19,6 +19,13 @@
 - Test coverage ≥ **90%** (lines, functions, branches, statements) enforced by Vitest thresholds.
 - No plugin import above the adapter layer. Services import adapters; stores import services; UI imports stores.
 - TypeScript throughout. Keep dependencies minimal.
+- **Design fidelity:** all UI matches `docs/design/DESIGN.md` (tokens, component states) and `docs/design/Wisp.app.reference.html`. Fonts **Sora** (display) + **Plus Jakarta Sans** (body) are bundled locally for offline use with a system fallback — never load fonts from a CDN at runtime.
+- **Mixer:** orbit layout (nodes around a central play/timer orb) with **tap-to-select + slider** — no drag.
+- Marketing deliverables: Play Store asset set (icon/feature graphic/screenshots) **and** a standalone marketing landing page, derived from `Wisp Marketing.dc.html` (design project `99bbc0e9-ff96-4427-a650-4aec3b8b6245`).
+
+### Execution order
+Task numbers are not strictly sequential for execution. Dispatch order (dependencies):
+`2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 17 (theme/fonts) → 12 (components) → 13 (screens) → 14 (E2E) → 15 (Capacitor) → 18 (store assets) → 20 (Android icon) → 19 (marketing page) → 16 (README + final verify)`. (Task 1 is already complete.)
 
 ---
 
@@ -1903,483 +1910,152 @@ git commit -m "feat: add app composition root wiring stores + services"
 
 ---
 
-### Task 12: UI components
+### Task 12: UI components (design-accurate)
+
+**REQUIRED SKILL:** Use `frontend-design:frontend-design`. The visual source of truth is `docs/design/DESIGN.md` (tokens, component states) and `docs/design/Wisp.app.reference.html` (pixel-exact markup; sections delimited by `<!-- ====== N. NAME ====== -->` and a "Component states" / "Design system" panel near the end). Match colors, radii, type, and the per-state styling exactly. Components are presentational (props in, callbacks out) — no store imports — so they unit-test in isolation.
 
 **Files:**
-- Create: `src/lib/components/SoundTile.svelte`, `VolumeSlider.svelte`, `TimerControl.svelte`, `PaywallCard.svelte`
-- Test: `src/lib/components/SoundTile.test.ts`, `src/lib/components/TimerControl.test.ts`
+- Create: `src/lib/components/SoundIcon.svelte`, `WispMark.svelte`, `Toggle.svelte`, `SoundRow.svelte`, `VolumeSlider.svelte`, `NowPlayingBar.svelte`, `BottomNav.svelte`, `OrbitNode.svelte`, `OrbitMixer.svelte`, `TimerSheet.svelte`, `MixCard.svelte`, `PackageCard.svelte`, `PremiumStatusCard.svelte`
+- Test: `SoundIcon.test.ts`, `Toggle.test.ts`, `SoundRow.test.ts`, `VolumeSlider.test.ts`, `NowPlayingBar.test.ts`, `BottomNav.test.ts`, `OrbitMixer.test.ts`, `TimerSheet.test.ts`, `MixCard.test.ts`, `PackageCard.test.ts` (all under `src/lib/components/`)
 
-**Interfaces:**
-- `SoundTile` props: `{ sound: SoundDef; active: boolean; locked: boolean; onactivate: () => void }`. Renders name; shows a lock glyph when `locked`; dispatches `onactivate` on click.
-- `VolumeSlider` props: `{ value: number; oninput: (v: number) => void }`. Range input 0..1 step 0.01.
-- `TimerControl` props: `{ state: TimerState; onpreset: (m:number)=>void; oncustom:(m:number)=>void; onuntil: ()=>void; oncancel: ()=>void }`. Renders preset buttons 15/30/45/60/90, custom input, "until I stop", cancel.
-- `PaywallCard` props: `{ pkg: PackageLite; onbuy: () => void }`. Renders price + buy button.
+**Interfaces (props are Svelte 5 runes `$props()`):**
+- `SoundIcon` `{ id: string; size?: number }` — renders the bespoke 24×24, 1.6px-stroke line glyph for the sound id (map ids→`<path>` set from the marketing "Sound icon library"; ids without a bespoke glyph fall back to a generic wave). `aria-hidden`.
+- `WispMark` `{ size?: number; gradient?: boolean }` — the brand wisp path on an accent-gradient rounded square.
+- `Toggle` `{ on: boolean; disabled?: boolean; onToggle: () => void }` — pill switch (42×26). `role="switch"`, `aria-checked={on}`. Calls `onToggle` on click unless `disabled`.
+- `SoundRow` `{ sound: SoundDef; active: boolean; volume?: number; locked: boolean; onPrimary: () => void }` — full-width row. Idle/active/locked/disabled states per DESIGN.md. Active shows `On · NN%` (from `volume`); locked shows "Premium" + lock chip (no toggle). Trailing control: `Toggle` (free) or lock chip (locked). Whole row + control call `onPrimary`. Active row uses `aria-pressed`.
+- `VolumeSlider` `{ value: number; label?: string; oninput: (v: number) => void }` — styled 0..1 track+fill+knob (design styling), backed by a real `<input type="range" min=0 max=1 step=0.01>` for accessibility/testability. `aria-label` from `label` (default "volume"). Shows `NN%` readout.
+- `NowPlayingBar` `{ count: number; names: string; playing: boolean; onOpen: () => void; onTogglePlay: () => void }` — floating blurred bar with equalizer bars (CSS `wispBar`), "Playing · N sounds", source names. Hidden when `count===0`. Tapping body → `onOpen`; play/pause btn → `onTogglePlay`.
+- `BottomNav` `{ active: 'sounds' | 'mixes' | 'settings' }` — 3 tabs as `<a href>` (Sounds `/`, Mixes `/mixes`, Settings `/settings`). Active tab highlighted.
+- `OrbitNode` `{ id: string; volume: number; selected: boolean; angleDeg: number; onSelect: () => void }` — a circular sound node positioned on the orbit; border opacity ∝ volume; selected ring when `selected`. `onSelect` on click. `aria-label` = sound name.
+- `OrbitMixer` `{ layers: {soundId:string;volume:number}[]; selectedId: string | null; timerLabel: string; playing: boolean; onSelect:(id:string)=>void; onTogglePlay:()=>void; onAdd:()=>void }` — central play/timer orb (progress ring + breathing glow + play/pause + `timerLabel`) with one `OrbitNode` per layer evenly spaced around it, plus a dashed "+" add node. For exactly one layer, the design's "single sound" variant is rendered by the route, not here.
+- `TimerSheet` `{ open: boolean; selected: number | 'custom' | 'until' | null; onPick:(v:number|'custom'|'until')=>void; onStart:()=>void; onClose:()=>void }` — bottom sheet (scrim + sheet), explainer copy ("Sound fades out gently over the last 30 seconds…"), 3×2 chips 15/30/45/60/90/Custom, "Until I stop it" row, primary "Start timer · NN min". Scrim click → `onClose`. Renders nothing when `!open`.
+- `MixCard` `{ mix: Mix; playing: boolean; onPlay: () => void; onDelete: () => void }` — saved-mix card; playing variant highlighted with "PLAYING" + equalizer; shows name + layer-names subtitle; round play button → `onPlay`; delete control → `onDelete`.
+- `PackageCard` `{ pkg: PackageLite; featured?: boolean; onSelect: () => void }` — paywall plan card. Featured (annual) shows accent border + "BEST VALUE · SAVE 60%" badge + "7-day free trial" line; renders `priceString` and per-month derived label. `onSelect` on click.
+- `PremiumStatusCard` `{ premium: boolean }` — settings status card on accent gradient ("Premium" / "Free — upgrade").
 
-- [ ] **Step 1: Write failing component test `src/lib/components/SoundTile.test.ts`**
+- [ ] **Step 1 (per component, TDD): write the failing behavior test first.** Each test renders the component with `@testing-library/svelte` and asserts the behavior contract above (text/role present, callback fired on the right interaction, state class/attr toggles). Representative examples — write equivalents for every component:
 
 ```ts
+// SoundRow.test.ts
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
-import SoundTile from './SoundTile.svelte';
+import SoundRow from './SoundRow.svelte';
 import type { SoundDef } from '$lib/types';
+const rain: SoundDef = { id: 'rain', name: 'Rain', category: 'nature', tier: 'free', assetPath: 'sounds/rain.mp3' };
+const forest: SoundDef = { id: 'forest', name: 'Forest', category: 'nature', tier: 'premium', assetPath: 'sounds/forest.mp3' };
 
-const sound: SoundDef = { id: 'rain', name: 'Rain', category: 'nature', tier: 'free', assetPath: 'sounds/rain.mp3' };
-
-describe('SoundTile', () => {
-  it('renders the sound name', () => {
-    render(SoundTile, { props: { sound, active: false, locked: false, onactivate: () => {} } });
+describe('SoundRow', () => {
+  it('shows On · NN% when active', () => {
+    render(SoundRow, { props: { sound: rain, active: true, volume: 0.8, locked: false, onPrimary: () => {} } });
     expect(screen.getByText('Rain')).toBeInTheDocument();
+    expect(screen.getByText(/On · 80%/)).toBeInTheDocument();
   });
-
-  it('shows a lock when locked', () => {
-    render(SoundTile, { props: { sound, active: false, locked: true, onactivate: () => {} } });
-    expect(screen.getByLabelText('locked')).toBeInTheDocument();
+  it('renders a lock and Premium label when locked, no toggle', () => {
+    render(SoundRow, { props: { sound: forest, active: false, locked: true, onPrimary: () => {} } });
+    expect(screen.getByText('Premium')).toBeInTheDocument();
+    expect(screen.queryByRole('switch')).toBeNull();
   });
-
-  it('calls onactivate when clicked', async () => {
-    const onactivate = vi.fn();
-    render(SoundTile, { props: { sound, active: false, locked: false, onactivate } });
-    await fireEvent.click(screen.getByRole('button'));
-    expect(onactivate).toHaveBeenCalledOnce();
+  it('fires onPrimary when the row is activated', async () => {
+    const onPrimary = vi.fn();
+    render(SoundRow, { props: { sound: rain, active: false, locked: false, onPrimary } });
+    await fireEvent.click(screen.getByText('Rain'));
+    expect(onPrimary).toHaveBeenCalled();
   });
 });
 ```
-
-- [ ] **Step 2: Write failing component test `src/lib/components/TimerControl.test.ts`**
 
 ```ts
+// TimerSheet.test.ts (key behaviors)
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
-import TimerControl from './TimerControl.svelte';
+import TimerSheet from './TimerSheet.svelte';
 
-const offState = { mode: 'off' as const, durationSec: null, endsAt: null };
-
-describe('TimerControl', () => {
-  it('fires onpreset for 30 minutes', async () => {
-    const onpreset = vi.fn();
-    render(TimerControl, {
-      props: { state: offState, onpreset, oncustom: () => {}, onuntil: () => {}, oncancel: () => {} }
-    });
-    await fireEvent.click(screen.getByRole('button', { name: '30' }));
-    expect(onpreset).toHaveBeenCalledWith(30);
+describe('TimerSheet', () => {
+  it('renders nothing when closed', () => {
+    const { container } = render(TimerSheet, { props: { open: false, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {} } });
+    expect(container.textContent).toBe('');
   });
-
-  it('fires onuntil for until-I-stop', async () => {
-    const onuntil = vi.fn();
-    render(TimerControl, {
-      props: { state: offState, onpreset: () => {}, oncustom: () => {}, onuntil, oncancel: () => {} }
-    });
-    await fireEvent.click(screen.getByRole('button', { name: /until/i }));
-    expect(onuntil).toHaveBeenCalledOnce();
+  it('picks a preset and starts', async () => {
+    const onPick = vi.fn(); const onStart = vi.fn();
+    render(TimerSheet, { props: { open: true, selected: 30, onPick, onStart, onClose: () => {} } });
+    await fireEvent.click(screen.getByRole('button', { name: '45 min' }));
+    expect(onPick).toHaveBeenCalledWith(45);
+    await fireEvent.click(screen.getByRole('button', { name: /Start timer/ }));
+    expect(onStart).toHaveBeenCalled();
   });
 });
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+```ts
+// OrbitMixer.test.ts (behavior, not pixels)
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/svelte';
+import OrbitMixer from './OrbitMixer.svelte';
 
-Run: `npx vitest run src/lib/components/`
-Expected: FAIL — components do not exist.
-
-- [ ] **Step 4: Create `src/lib/components/SoundTile.svelte`**
-
-```svelte
-<script lang="ts">
-  import type { SoundDef } from '$lib/types';
-  let { sound, active, locked, onactivate }: {
-    sound: SoundDef; active: boolean; locked: boolean; onactivate: () => void;
-  } = $props();
-</script>
-
-<button class="tile" class:active aria-pressed={active} onclick={onactivate}>
-  <span class="name">{sound.name}</span>
-  {#if locked}
-    <span class="lock" aria-label="locked">🔒</span>
-  {/if}
-</button>
-
-<style>
-  .tile {
-    background: var(--surface);
-    border: 1px solid transparent;
-    border-radius: var(--radius);
-    padding: 18px 14px;
-    min-height: 84px;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    width: 100%;
-  }
-  .tile.active { border-color: var(--accent); background: var(--surface-2); }
-  .name { font-weight: 600; }
-  .lock { color: var(--locked); }
-</style>
+describe('OrbitMixer', () => {
+  it('renders a node per layer and selects on tap', async () => {
+    const onSelect = vi.fn();
+    render(OrbitMixer, { props: {
+      layers: [{ soundId: 'rain', volume: 0.8 }, { soundId: 'ocean', volume: 0.5 }],
+      selectedId: 'rain', timerLabel: '30 min', playing: true,
+      onSelect, onTogglePlay: () => {}, onAdd: () => {} } });
+    await fireEvent.click(screen.getByRole('button', { name: /Ocean/ }));
+    expect(onSelect).toHaveBeenCalledWith('ocean');
+  });
+  it('fires onAdd from the add node', async () => {
+    const onAdd = vi.fn();
+    render(OrbitMixer, { props: { layers: [{ soundId: 'rain', volume: 1 }], selectedId: 'rain', timerLabel: 'Off', playing: false, onSelect: () => {}, onTogglePlay: () => {}, onAdd } });
+    await fireEvent.click(screen.getByRole('button', { name: /add/i }));
+    expect(onAdd).toHaveBeenCalled();
+  });
+});
 ```
 
-- [ ] **Step 5: Create `src/lib/components/VolumeSlider.svelte`**
+- [ ] **Step 2: Run the new tests, watch them fail** (`npx vitest run src/lib/components/`) — components don't exist yet.
 
-```svelte
-<script lang="ts">
-  let { value, oninput }: { value: number; oninput: (v: number) => void } = $props();
-  function handle(e: Event) {
-    oninput(parseFloat((e.target as HTMLInputElement).value));
-  }
-</script>
+- [ ] **Step 3: Implement each component** to satisfy its test AND match DESIGN.md / the reference HTML pixel-for-pixel (gradients, borders, radii, type, equalizer/breathing animations via `<style>` keyframes `wispBar`, `wispBreathe`). Use `SoundIcon` for glyphs and the registry's `getSound` for names. Keep each file focused; if one grows unwieldy, report DONE_WITH_CONCERNS.
 
-<input type="range" min="0" max="1" step="0.01" {value} oninput={handle} aria-label="volume" />
+- [ ] **Step 4: Run tests + type-check** (`npx vitest run src/lib/components/ && npm run check`). All component tests pass; output pristine.
 
-<style>
-  input { width: 100%; accent-color: var(--accent); }
-</style>
-```
-
-- [ ] **Step 6: Create `src/lib/components/TimerControl.svelte`**
-
-```svelte
-<script lang="ts">
-  import type { TimerState } from '$lib/types';
-  let { state, onpreset, oncustom, onuntil, oncancel }: {
-    state: TimerState;
-    onpreset: (m: number) => void;
-    oncustom: (m: number) => void;
-    onuntil: () => void;
-    oncancel: () => void;
-  } = $props();
-  const presets = [15, 30, 45, 60, 90];
-  let custom = $state(20);
-</script>
-
-<div class="timer">
-  <div class="presets">
-    {#each presets as m}
-      <button onclick={() => onpreset(m)}>{m}</button>
-    {/each}
-  </div>
-  <div class="row">
-    <input type="number" min="1" max="600" bind:value={custom} aria-label="custom minutes" />
-    <button onclick={() => oncustom(custom)}>Set custom</button>
-  </div>
-  <button onclick={onuntil}>Until I stop</button>
-  {#if state.mode !== 'off'}
-    <button class="cancel" onclick={oncancel}>Cancel timer ({state.mode})</button>
-  {/if}
-</div>
-
-<style>
-  .timer { display: flex; flex-direction: column; gap: 12px; }
-  .presets { display: flex; gap: 8px; flex-wrap: wrap; }
-  .presets button, .row button, .cancel { background: var(--surface-2); border: none; border-radius: 10px; padding: 10px 14px; }
-  .row { display: flex; gap: 8px; }
-  .row input { width: 90px; background: var(--surface); border: 1px solid var(--surface-2); color: var(--text); border-radius: 10px; padding: 8px; }
-  .cancel { color: var(--accent); }
-</style>
-```
-
-- [ ] **Step 7: Create `src/lib/components/PaywallCard.svelte`**
-
-```svelte
-<script lang="ts">
-  import type { PackageLite } from '$lib/adapters/purchases';
-  let { pkg, onbuy }: { pkg: PackageLite; onbuy: () => void } = $props();
-</script>
-
-<button class="card" onclick={onbuy}>
-  <span class="type">{pkg.packageType === 'ANNUAL' ? 'Annual' : 'Monthly'}</span>
-  <span class="price">{pkg.priceString}</span>
-  {#if pkg.packageType === 'ANNUAL'}<span class="trial">7-day free trial</span>{/if}
-</button>
-
-<style>
-  .card { display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
-    background: var(--surface-2); border: 1px solid var(--accent); border-radius: var(--radius);
-    padding: 16px; width: 100%; }
-  .price { font-size: 1.4rem; font-weight: 700; }
-  .trial { color: var(--muted); font-size: 0.85rem; }
-</style>
-```
-
-- [ ] **Step 8: Run tests to verify they pass**
-
-Run: `npx vitest run src/lib/components/`
-Expected: PASS (5 tests).
-
-- [ ] **Step 9: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add -A
-git commit -m "feat: add UI components (tile, slider, timer, paywall)"
+git commit -m "feat: design-accurate UI components (sound row, orbit mixer, timer sheet, paywall cards, nav)"
 ```
 
 ---
 
-### Task 13: Routes / screens + layout init
+### Task 13: Routes / screens + layout (design-accurate)
+
+**REQUIRED SKILL:** Use `frontend-design:frontend-design`. Match the screen layouts in `docs/design/DESIGN.md` §Screens and `docs/design/Wisp.app.reference.html`. Routes are the glue between stores (Task 11 `app`) and the Task 12 components; behavioral logic already lives in the stores and is unit-tested, so route tests are covered by the E2E suite (Task 14).
 
 **Files:**
-- Create: `src/routes/+layout.svelte`, `src/routes/+page.svelte`, `src/routes/now-playing/+page.svelte`, `src/routes/mixes/+page.svelte`, `src/routes/paywall/+page.svelte`, `src/routes/settings/+page.svelte`
-- Test: covered by E2E in Task 14 (routes are thin glue; logic is already unit-tested in stores).
+- Create/replace: `src/routes/+layout.svelte`, `src/routes/+page.svelte` (Home), `src/routes/now-playing/+page.svelte`, `src/routes/mixes/+page.svelte`, `src/routes/paywall/+page.svelte`, `src/routes/settings/+page.svelte`
 
 **Interfaces:**
-- Consumes: `app`, `RC_API_KEY` from Task 11; `SOUNDS`, `getSound` from Task 2; components from Task 12.
-- `+layout.svelte` initializes RevenueCat on mount, refreshes entitlement on Capacitor `App` `resume`, and clears `sounds` when the timer resets to `off` after firing.
+- Consumes: `app` + `RC_API_KEY` (Task 11), components (Task 12), `SOUNDS`/`getSound` (Task 2).
 
-- [ ] **Step 1: Create `src/routes/+layout.svelte`**
+- [ ] **Step 1: `+layout.svelte`** — global dark background + safe-area padding; initializes RevenueCat on mount (`subscription.init(RC_API_KEY)`); refreshes entitlement on Capacitor `App` `resume`; clears `sounds` when the timer resets to `off` after firing (the `$effect` from the original Task 13 design); renders `{@render children()}` and a `BottomNav` whose active tab is derived from `$page.url.pathname`. The `now-playing` and `paywall` routes hide the bottom nav (full-screen). Loads the bundled fonts via the theme set up in the theme task.
 
-```svelte
-<script lang="ts">
-  import { onMount } from 'svelte';
-  import { App as CapApp } from '@capacitor/app';
-  import { app, RC_API_KEY } from '$lib/app';
-  import '../app.css';
+- [ ] **Step 2: Home `/`** — header eyebrow + Sora "Sounds" + search button; **hero favorite-mix card** (plays the first saved mix, or a sensible default mix if none; tapping → applyMix + navigate to `/now-playing`); the sound list rendered from `SOUNDS` as `SoundRow`s with active sounds (keys of `$sounds`) floated to the top, `locked = sound.tier==='premium' && !$isPremium` (locked tap → `/paywall`, else `sounds.toggle`); the `NowPlayingBar` (count = active count, opens `/now-playing`).
 
-  let { children } = $props();
-  const { subscription, timer, sounds } = app;
+- [ ] **Step 3: Now-playing `/now-playing`** — header with back chevron (→ `/`). If exactly one active sound, render the **single-sound** variant (big sound name, large play orb with timer label, full-width `VolumeSlider` for that sound, dashed "Add another sound" → `/`); otherwise render `OrbitMixer` over `sounds.currentLayers()` with a selected sound (default first) and the selected sound's `VolumeSlider` below. Bottom: timer pill (opens `TimerSheet`) + Save pill (saves current layers via `mixes.save` with a default name `"My Mix"`, surfacing the `FREE_MIX_LIMIT` error as the text "Upgrade to save more mixes" with a link to `/paywall`). Hosts the `TimerSheet`; on `onStart`, calls the matching `timer.startPreset/startCustom/startUntilStop`.
 
-  let prevMode = $state('off');
-  $effect(() => {
-    const mode = $timer.mode;
-    if (prevMode !== 'off' && mode === 'off') {
-      void sounds.stopAll();
-    }
-    prevMode = mode;
-  });
+- [ ] **Step 4: Saved mixes `/mixes`** — Sora "Your mixes" + "N saved" subtitle; `mixes.load()` on mount; one `MixCard` per saved mix (playing = its layers match `$sounds`); play → `sounds.applyMix` + navigate `/now-playing`; delete → `mixes.remove`; dashed "Create new mix" → `/`.
 
-  onMount(() => {
-    void subscription.init(RC_API_KEY);
-    const sub = CapApp.addListener('resume', () => {
-      void subscription.refresh();
-    });
-    return () => {
-      void sub.then((h) => h.remove());
-    };
-  });
-</script>
+- [ ] **Step 5: Paywall `/paywall`** — close ✕ → back; brand mark + "Wisp Premium" + subtitle + benefit list (copy verbatim from DESIGN.md §5, incl. "60+ premium sounds"); load `subscription.listPackages()` on mount; render a featured annual `PackageCard` + monthly `PackageCard`; CTA "Start 7-day free trial" → `subscription.buy(selectedPkg)` then back to `/`; footer Restore (→ `subscription.restore`) / Terms / Privacy links.
 
-<main>
-  {@render children()}
-</main>
-<nav>
-  <a href="/">Sounds</a>
-  <a href="/now-playing">Now Playing</a>
-  <a href="/mixes">Mixes</a>
-  <a href="/settings">Settings</a>
-</nav>
+- [ ] **Step 6: Settings `/settings`** — Sora "Settings"; `PremiumStatusCard` bound to `$isPremium`; rows: Restore purchases, battery-optimization hint (Xiaomi/Samsung) copy, Privacy Policy link, Terms link.
 
-<style>
-  main { padding: 16px 16px 88px; max-width: 720px; margin: 0 auto; }
-  nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-around;
-    background: var(--surface); padding: 12px; border-top: 1px solid var(--surface-2); }
-  nav a { color: var(--muted); text-decoration: none; font-size: 0.85rem; }
-</style>
-```
-
-- [ ] **Step 2: Create `src/routes/+page.svelte`** (Home grid)
-
-```svelte
-<script lang="ts">
-  import { goto } from '$app/navigation';
-  import { app } from '$lib/app';
-  import { SOUNDS } from '$lib/sounds/registry';
-  import SoundTile from '$lib/components/SoundTile.svelte';
-
-  const { sounds, subscription } = app;
-  const isPremium = subscription.isPremium;
-
-  async function activate(id: string, locked: boolean) {
-    if (locked) {
-      await goto('/paywall');
-      return;
-    }
-    await sounds.toggle(id);
-  }
-</script>
-
-<h1>Wisp</h1>
-<div class="grid">
-  {#each SOUNDS as sound}
-    {@const locked = sound.tier === 'premium' && !$isPremium}
-    <SoundTile
-      {sound}
-      active={sound.id in $sounds}
-      {locked}
-      onactivate={() => activate(sound.id, locked)}
-    />
-  {/each}
-</div>
-
-<style>
-  h1 { font-weight: 700; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-</style>
-```
-
-- [ ] **Step 3: Create `src/routes/now-playing/+page.svelte`**
-
-```svelte
-<script lang="ts">
-  import { app } from '$lib/app';
-  import { getSound } from '$lib/sounds/registry';
-  import VolumeSlider from '$lib/components/VolumeSlider.svelte';
-  import TimerControl from '$lib/components/TimerControl.svelte';
-
-  const { sounds, timer, mixes, subscription } = app;
-  const isPremium = subscription.isPremium;
-  let mixName = $state('');
-  let error = $state('');
-
-  async function saveMix() {
-    error = '';
-    try {
-      await mixes.save(mixName || 'My Mix', sounds.currentLayers(), $isPremium);
-      mixName = '';
-    } catch (e) {
-      error = (e as Error).message === 'FREE_MIX_LIMIT' ? 'Upgrade to save more mixes.' : 'Could not save.';
-    }
-  }
-</script>
-
-<h1>Now Playing</h1>
-
-{#each Object.entries($sounds) as [id, vol]}
-  <div class="layer">
-    <span>{getSound(id)?.name ?? id}</span>
-    <VolumeSlider value={vol} oninput={(v) => sounds.setVolume(id, v)} />
-    <button onclick={() => sounds.toggle(id)}>Stop</button>
-  </div>
-{:else}
-  <p>No sounds playing. Pick some from the Sounds tab.</p>
-{/each}
-
-<section class="save">
-  <input placeholder="Mix name" bind:value={mixName} />
-  <button onclick={saveMix} disabled={Object.keys($sounds).length === 0}>Save mix</button>
-  {#if error}<p class="error">{error}</p>{/if}
-</section>
-
-<section class="timer">
-  <h2>Sleep timer</h2>
-  <TimerControl
-    state={$timer}
-    onpreset={(m) => timer.startPreset(m)}
-    oncustom={(m) => timer.startCustom(m)}
-    onuntil={() => timer.startUntilStop()}
-    oncancel={() => timer.cancel()}
-  />
-</section>
-
-<style>
-  .layer { display: grid; grid-template-columns: 1fr 2fr auto; gap: 10px; align-items: center; margin: 10px 0; }
-  .save { display: flex; gap: 8px; margin: 20px 0; }
-  .save input { flex: 1; background: var(--surface); border: 1px solid var(--surface-2); color: var(--text); border-radius: 10px; padding: 10px; }
-  .error { color: #ff9b9b; }
-</style>
-```
-
-- [ ] **Step 4: Create `src/routes/mixes/+page.svelte`**
-
-```svelte
-<script lang="ts">
-  import { onMount } from 'svelte';
-  import { app } from '$lib/app';
-
-  const { mixes, sounds } = app;
-  onMount(() => {
-    void mixes.load();
-  });
-</script>
-
-<h1>Saved Mixes</h1>
-{#each $mixes as mix}
-  <div class="mix">
-    <button class="play" onclick={() => sounds.applyMix(mix)}>{mix.name}</button>
-    <button onclick={() => mixes.remove(mix.id)} aria-label="delete">🗑</button>
-  </div>
-{:else}
-  <p>No saved mixes yet.</p>
-{/each}
-
-<style>
-  .mix { display: flex; justify-content: space-between; align-items: center;
-    background: var(--surface); border-radius: var(--radius); padding: 14px; margin: 8px 0; }
-  .play { font-weight: 600; background: none; border: none; }
-</style>
-```
-
-- [ ] **Step 5: Create `src/routes/paywall/+page.svelte`**
-
-```svelte
-<script lang="ts">
-  import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
-  import { app } from '$lib/app';
-  import PaywallCard from '$lib/components/PaywallCard.svelte';
-  import type { PackageLite } from '$lib/adapters/purchases';
-
-  const { subscription } = app;
-  let packages = $state<PackageLite[]>([]);
-
-  onMount(async () => {
-    packages = await subscription.listPackages();
-  });
-
-  async function buy(pkg: PackageLite) {
-    await subscription.buy(pkg);
-    await goto('/');
-  }
-</script>
-
-<h1>Wisp Premium</h1>
-<p>Unlock 30+ sounds and unlimited mixes.</p>
-<div class="cards">
-  {#each packages as pkg}
-    <PaywallCard {pkg} onbuy={() => buy(pkg)} />
-  {/each}
-</div>
-<button class="restore" onclick={() => subscription.restore()}>Restore purchases</button>
-
-<style>
-  .cards { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
-  .restore { background: none; border: none; color: var(--muted); }
-</style>
-```
-
-`listPackages` is provided by the subscription store (defined in Task 7), so no additional patch is required here.
-
-- [ ] **Step 6: Create `src/routes/settings/+page.svelte`**
-
-```svelte
-<script lang="ts">
-  import { app } from '$lib/app';
-  const { subscription } = app;
-  const isPremium = subscription.isPremium;
-</script>
-
-<h1>Settings</h1>
-<p>Status: {$isPremium ? 'Premium' : 'Free'}</p>
-<p class="hint">
-  If audio stops when your screen turns off, disable battery optimization for Wisp in your phone's
-  battery settings (common on Xiaomi / Samsung).
-</p>
-<p><a href="https://example.com/wisp/privacy">Privacy Policy</a></p>
-<button onclick={() => subscription.restore()}>Restore purchases</button>
-
-<style>
-  .hint { color: var(--muted); }
-</style>
-```
-
-- [ ] **Step 7: Verify build + unit suite**
-
-Run: `npm run build && npm test`
-Expected: build succeeds; all unit/component tests pass; coverage ≥ 90%.
+- [ ] **Step 7: Verify build + unit suite** — `npm run build && npm test`. Build succeeds; all unit/component tests pass; coverage ≥ 90% on `src/lib/**`.
 
 - [ ] **Step 8: Commit**
 
 ```bash
 git add -A
-git commit -m "feat: add screens and layout (home, now-playing, mixes, paywall, settings)"
+git commit -m "feat: design-accurate screens (home, orbit now-playing, mixes, paywall, settings)"
 ```
-
----
-
 ### Task 14: E2E test (Playwright, browser fakes)
 
 **Files:**
@@ -2444,22 +2120,26 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test('layer two sounds, save a mix, hit the free cap', async ({ page }) => {
+test('layer two sounds, save a mix, then hit the free-tier cap', async ({ page }) => {
   await page.goto('/');
+  // SoundRow renders as a button whose accessible name includes the sound name.
   await page.getByRole('button', { name: /Rain/ }).click();
   await page.getByRole('button', { name: /Ocean/ }).click();
 
   await page.goto('/now-playing');
-  await expect(page.getByText('Rain')).toBeVisible();
-
-  await page.getByPlaceholder('Mix name').fill('Night');
-  await page.getByRole('button', { name: 'Save mix' }).click();
+  await page.getByRole('button', { name: /Save/ }).click();
 
   await page.goto('/mixes');
-  await expect(page.getByRole('button', { name: 'Night' })).toBeVisible();
+  // a saved mix card is now present (default "My Mix" name)
+  await expect(page.getByRole('button', { name: /My Mix/ })).toBeVisible();
+
+  // free tier is capped at one saved mix → a second save surfaces the upgrade hint
+  await page.goto('/now-playing');
+  await page.getByRole('button', { name: /Save/ }).click();
+  await expect(page.getByText(/Upgrade to save more mixes/i)).toBeVisible();
 });
 
-test('locked premium sound routes to paywall', async ({ page }) => {
+test('locked premium sound routes to the paywall', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Thunderstorm/ }).click();
   await expect(page).toHaveURL(/paywall/);
@@ -2591,6 +2271,189 @@ git commit -m "docs: add README with build, assets, RevenueCat + Play Console se
 
 ---
 
+---
+
+### Task 17: Theme — fonts + design tokens (run BEFORE Task 12)
+
+Replaces the placeholder `src/app.css` from Task 1 with the full Wisp design system, and bundles the fonts for offline use.
+
+**Files:**
+- Replace: `src/app.css`
+- Create: `static/fonts/fonts.css`, `static/fonts/.gitkeep`, `scripts/fetch-fonts.mjs`
+- Test: `src/lib/theme.test.ts`
+
+**Interfaces:**
+- Produces CSS custom properties matching `docs/design/DESIGN.md` §Color tokens / §Type scale / §Radius. Exports a tiny `src/lib/theme.ts` with `formatPercent(v: number): string` (e.g. `0.8 → "80%"`) and `pct(v:number):string` used by `SoundRow`/`VolumeSlider` readouts, so the formatting is unit-tested once and reused (DRY).
+
+- [ ] **Step 1: Write failing test `src/lib/theme.test.ts`**
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { formatPercent } from './theme';
+
+describe('formatPercent', () => {
+  it('formats 0..1 as whole-percent strings', () => {
+    expect(formatPercent(0)).toBe('0%');
+    expect(formatPercent(0.8)).toBe('80%');
+    expect(formatPercent(1)).toBe('100%');
+  });
+  it('rounds to nearest percent', () => {
+    expect(formatPercent(0.555)).toBe('56%');
+  });
+  it('clamps out-of-range input', () => {
+    expect(formatPercent(-1)).toBe('0%');
+    expect(formatPercent(2)).toBe('100%');
+  });
+});
+```
+
+- [ ] **Step 2: Run it, watch it fail** — `npx vitest run src/lib/theme.test.ts`.
+
+- [ ] **Step 3: Create `src/lib/theme.ts`**
+
+```ts
+export function formatPercent(v: number): string {
+  const clamped = Math.max(0, Math.min(1, v));
+  return `${Math.round(clamped * 100)}%`;
+}
+```
+
+- [ ] **Step 4: Replace `src/app.css`** with the full token set + `@font-face` (fonts loaded from `/fonts/*.woff2`, system fallback so the app renders even before fonts are vendored):
+
+```css
+@font-face { font-family: 'Sora'; src: url('/fonts/Sora-Variable.woff2') format('woff2'); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans-Variable.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
+
+:root {
+  --bg-top: #0c1226; --bg-bot: #0a0e1c;
+  --surface: #141a30; --surface-hi-a: #23284a; --surface-hi-b: #1a1f3c;
+  --track: #1c2240; --accent-1: #7c8cf0; --accent-2: #b98cf0;
+  --text: #eef1ff; --text-dim: #dfe3f7; --muted: #8d96bd; --muted-2: #6b739a;
+  --locked: #5b6488; --premium: #9a7fc4; --on-accent: #0c1226;
+  --r-row: 12px; --r-card: 18px; --r-sheet: 24px; --r-pill: 30px;
+  --accent-grad: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  --font-display: 'Sora', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: linear-gradient(180deg, var(--bg-top), var(--bg-bot)) fixed;
+  color: var(--text); font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, .display { font-family: var(--font-display); letter-spacing: -0.5px; }
+button { font: inherit; color: inherit; cursor: pointer; border: none; background: none; }
+a { color: inherit; text-decoration: none; }
+@keyframes wispBreathe { 0%,100% { opacity:.35; transform:scale(1);} 50% { opacity:.8; transform:scale(1.07);} }
+@keyframes wispBar { 0%,100% { transform:scaleY(.4);} 50% { transform:scaleY(1);} }
+```
+
+- [ ] **Step 5: Create `scripts/fetch-fonts.mjs`** — a Node script that downloads the Sora & Plus Jakarta Sans woff2 from the Google Fonts API and writes them to `static/fonts/`. Document in README that running `node scripts/fetch-fonts.mjs` (online, once) vendors the real fonts; until then the system fallback applies. Add `static/fonts/.gitkeep` so the dir exists. (If the build environment has network, run it now and commit the woff2; otherwise leave the fallback.)
+
+```js
+// scripts/fetch-fonts.mjs
+import { writeFile, mkdir } from 'node:fs/promises';
+const FONTS = [
+  ['Sora-Variable.woff2', 'https://fonts.gstatic.com/s/sora/v12/xMQOuFFYT72X5wkB_18qmnndmSdSnk-DKQJRBg.woff2'],
+  ['PlusJakartaSans-Variable.woff2', 'https://fonts.gstatic.com/s/plusjakartasans/v8/LDIbaomQNQcsA88c7O9yZ4KMCoOg4IA6-91aHEjcWuA_qU7NShXUEKi4Rw.woff2']
+];
+await mkdir('static/fonts', { recursive: true });
+for (const [name, url] of FONTS) {
+  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+  if (!res.ok) throw new Error(`${name}: ${res.status}`);
+  await writeFile(`static/fonts/${name}`, Buffer.from(await res.arrayBuffer()));
+  console.log('wrote', name);
+}
+```
+
+- [ ] **Step 6: Run tests** — `npx vitest run src/lib/theme.test.ts` (PASS). Build still works: `npm run build`.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add -A
+git commit -m "feat: Wisp design tokens, offline font setup, percent formatter"
+```
+
+---
+
+### Task 18: Store assets (app icon, sound icon export, feature graphic, screenshots)
+
+Produces production marketing/store assets from the brand kit. The brand kit lives in the design project (`Wisp Marketing.dc.html`, project `99bbc0e9-ff96-4427-a650-4aec3b8b6245`) — pull it via DesignSync `get_file` for exact SVG paths/gradients.
+
+**Files:**
+- Create: `store-assets/icon/icon-master.svg` (512×512 primary), `icon-mono.svg`, `icon-night.svg`, `icon-foreground.svg` + `icon-background.svg` (Android adaptive), `store-assets/feature-graphic.svg` (1024×500), `store-assets/screenshots/01-drift-off.svg`, `02-mix.svg`, `03-pricing.svg`, and a `store-assets/README.md` explaining how to rasterize to PNG (e.g. `rsvg-convert`/`resvg`) at the sizes Play requires.
+- Create: `scripts/render-store-assets.mjs` — optional rasterizer wrapper (documents the commands; runs `resvg`/`sharp` if installed).
+
+**Interfaces:** none (assets + docs). No app code depends on this task except Task 20.
+
+- [ ] **Step 1:** Pull `Wisp Marketing.dc.html` (DesignSync get_file) and extract the exact SVGs: the wisp brand mark, the app-icon gradients (`linear-gradient(150deg,#8b9af5,#7c8cf0,#b98cf0)`, night radial), and the feature-graphic + 3 screenshot compositions.
+- [ ] **Step 2:** Author `icon-master.svg` (512×512, rounded-square accent gradient + wisp mark + scattered star dots) and the mono/night variants exactly per the kit.
+- [ ] **Step 3:** Author Android adaptive `icon-foreground.svg` (wisp mark, safe within the 66% keyline) + `icon-background.svg` (the gradient).
+- [ ] **Step 4:** Author `feature-graphic.svg` (1024×500: "Sleep sounds, beautifully simple." + phone peek + "Free to start" + ★4.9) and the 3 store-screenshot SVGs (360×720 compositions: "Drift off in seconds", "Mix your perfect night", "Premium for half the price — $39.99/yr").
+- [ ] **Step 5:** Write `store-assets/README.md` with exact rasterization commands (icon 512²; adaptive 108dp; feature 1024×500; screenshots 1080×2160) and where each goes in Play Console.
+- [ ] **Step 6: Verify** the SVGs render (open in a browser / `resvg` if available) and visually match the kit. Commit.
+
+```bash
+git add -A && git commit -m "assets: Play Store icon set, feature graphic, store screenshots (SVG sources)"
+```
+
+---
+
+### Task 19: Marketing landing page
+
+A standalone responsive marketing page (separate from the Capacitor app) built from the brand kit. Lives under `marketing/` and is independently deployable (static HTML/CSS, no framework needed).
+
+**Files:**
+- Create: `marketing/index.html`, `marketing/styles.css`, `marketing/assets/` (reuses `store-assets` SVGs via copy or relative link), `marketing/README.md` (how to preview/deploy).
+- Test: `tests/e2e/marketing.spec.ts` (Playwright) — smoke check.
+
+**Interfaces:** none.
+
+- [ ] **Step 1: Write failing Playwright smoke test `tests/e2e/marketing.spec.ts`**
+
+```ts
+import { test, expect } from '@playwright/test';
+import { pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+
+test('marketing landing renders hero, features, pricing', async ({ page }) => {
+  await page.goto(pathToFileURL(resolve('marketing/index.html')).href);
+  await expect(page.getByRole('heading', { name: /Sleep sounds, beautifully simple/i })).toBeVisible();
+  await expect(page.getByText(/Free to start/i)).toBeVisible();
+  await expect(page.getByText(/\$39\.99/)).toBeVisible();
+  await expect(page.getByText(/60\+ premium sounds/i)).toBeVisible();
+});
+```
+
+- [ ] **Step 2:** Run it, watch it fail (`npx playwright test tests/e2e/marketing.spec.ts`).
+- [ ] **Step 3:** Build `marketing/index.html` + `styles.css` (REQUIRED SKILL `frontend-design`): hero ("Sleep sounds, beautifully simple." + CTA + rating), feature section (the orbit/mixer story + sound library), pricing section (Annual $39.99/yr w/ trial + Monthly $6.99, "half what Calm/Headspace charge"), footer (Privacy/Terms/Play badge). Self-host fonts (reuse `static/fonts`) with system fallback; responsive (mobile-first, no horizontal scroll). Reuse the design tokens/colors from DESIGN.md.
+- [ ] **Step 4:** Run the smoke test (PASS) + manually verify responsiveness at mobile + desktop widths.
+- [ ] **Step 5: Commit**
+
+```bash
+git add -A && git commit -m "feat: marketing landing page"
+```
+
+---
+
+### Task 20: Wire app icon into Android (run AFTER Task 15 + Task 18)
+
+**Files:**
+- Modify: `android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` + adaptive icon resources; `android/app/src/main/res/values/colors.xml`
+- Create: rasterized icon PNGs under `android/app/src/main/res/mipmap-*`
+
+**Interfaces:** none.
+
+- [ ] **Step 1:** Rasterize `store-assets/icon/icon-foreground.svg` + `icon-background.svg` (Task 18) into the Android adaptive-icon resources (foreground/background layers) and legacy mipmap PNGs at all densities (mdpi→xxxhdpi). Use Android Studio's Image Asset tool or `resvg` + the documented sizes.
+- [ ] **Step 2:** Set the adaptive `ic_launcher.xml` to reference the foreground/background layers; add the background gradient color (or a `@drawable` background) to `colors.xml`.
+- [ ] **Step 3:** `npx cap sync android`, then build/install on device and confirm the launcher icon renders (manual, documented in README — emulator OK for icon check).
+- [ ] **Step 4: Commit**
+
+```bash
+git add -A && git commit -m "chore(android): wire Wisp adaptive launcher icon"
+```
 ## Self-Review
 
 **Spec coverage:**
@@ -2604,6 +2467,12 @@ git commit -m "docs: add README with build, assets, RevenueCat + Play Console se
 - Android manifest exact entries + capacitor.config + launchMode + iOS note → Task 15 (+ iOS note in README/Task 16). ✓
 - Tests >90% + automated app tests → Tasks 1 (gate), every unit task, 14 (E2E). ✓
 - README deliverable → Task 16. ✓
+- **Design fidelity** (Claude Design import: tokens, component states, 7 screens, orbit mixer) → Tasks 17 (theme/fonts), 12 (components), 13 (screens). ✓
+- **Offline fonts** (Sora + Plus Jakarta Sans, no CDN) → Task 17. ✓
+- **Marketing — store assets** (app icon set, feature graphic, screenshots) → Task 18; **Android launcher icon** → Task 20. ✓
+- **Marketing — landing page** → Task 19. ✓
+
+**Coverage thresholds note:** the 90% gate applies to `src/lib/**` (logic, stores, services, components). `.svelte` route files under `src/routes/**` are excluded from the unit-coverage `include` and are exercised by the Playwright E2E suite (Task 14) instead — route files are thin store/component glue, so their behavior is covered end-to-end rather than via jsdom unit tests.
 
 **Placeholder scan:** No TBD/TODO remain. The paywall route (Task 13) reads offerings via `subscription.listPackages()`, which is defined up front on both the service (Task 6) and the store (Task 7).
 
