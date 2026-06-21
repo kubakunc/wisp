@@ -798,7 +798,7 @@ git commit -m "feat: add plugin adapter interfaces and test fakes"
 **Interfaces:**
 - Consumes: `PreferencesAdapter` from Task 3.
 - Produces: `function createStorageService(prefs: PreferencesAdapter)` returning
-  `{ loadMixes(): Promise<Mix[]>; saveMixes(mixes: Mix[]): Promise<void>; loadVolume(): Promise<number | null>; saveSetting(key: string, value: string): Promise<void>; loadSetting(key: string): Promise<string | null>; }`
+  `{ loadMixes(): Promise<Mix[]>; saveMixes(mixes: Mix[]): Promise<void>; saveSetting(key: string, value: string): Promise<void>; loadSetting(key: string): Promise<string | null>; }`
   Keys: mixes stored under `wisp.mixes` as JSON. Settings prefixed `wisp.setting.`.
 
 - [ ] **Step 1: Write the failing test `src/lib/services/storageService.test.ts`**
