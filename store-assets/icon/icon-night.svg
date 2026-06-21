@@ -1,37 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Splash / in-app mark: deeper night background. -->
   <defs>
-    <!-- Night radial gradient: radial-gradient(120% 100% at 50% 0%,#1c2348,#0a0e1c) -->
-    <radialGradient id="nightGrad" cx="50%" cy="0%" r="110%" gradientUnits="objectBoundingBox">
-      <stop offset="0%" stop-color="#1c2348"/>
-      <stop offset="100%" stop-color="#0a0e1c"/>
+    <radialGradient id="bg" cx="50%" cy="0%" r="120%">
+      <stop offset="0" stop-color="#1c2348"/>
+      <stop offset="1" stop-color="#070a16"/>
     </radialGradient>
-    <!-- Wisp mark gradient on dark bg -->
-    <linearGradient id="wispGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#7c8cf0"/>
-      <stop offset="100%" stop-color="#b98cf0"/>
+    <linearGradient id="moon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b9af5"/>
+      <stop offset="1" stop-color="#c6a6f5"/>
     </linearGradient>
   </defs>
-
-  <!-- Background: rounded square with night radial gradient -->
-  <rect width="512" height="512" rx="112" ry="112" fill="url(#nightGrad)"/>
-
-  <!-- Star dots — glowing accent colors on dark bg -->
-  <circle cx="384" cy="124" r="6.4"  fill="#7c8cf0" opacity="0.80"/>
-  <circle cx="132" cy="107" r="4.7"  fill="#b98cf0" opacity="0.70"/>
-  <circle cx="418" cy="222" r="4.3"  fill="#7c8cf0" opacity="0.60"/>
-  <!-- Extra subtle stars -->
-  <circle cx="180" cy="60"  r="2.5"  fill="#9aa6f5" opacity="0.50"/>
-  <circle cx="440" cy="300" r="2.0"  fill="#b98cf0" opacity="0.40"/>
-  <circle cx="80"  cy="320" r="2.2"  fill="#7c8cf0" opacity="0.35"/>
-
-  <!-- Wisp brand mark with gradient stroke -->
-  <!-- defs inline for the gradient need to be declared before use -->
-  <g transform="translate(96,96) scale(13.333)">
-    <!-- Primary wave -->
-    <path d="M2 14c3.2 0 3.2-4.2 6.4-4.2s3.2 8.4 6.4 8.4 3.2-4.2 6.8-4.2"
-          fill="none" stroke="url(#wispGrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <!-- Secondary hint -->
-    <path d="M2 9c3.2 0 3.2-3 6.4-3"
-          fill="none" stroke="url(#wispGrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+  <rect width="512" height="512" rx="115" fill="url(#bg)"/>
+  <circle cx="392" cy="128" r="6" fill="#7c8cf0" opacity="0.85"/>
+  <circle cx="132" cy="358" r="4.5" fill="#b98cf0" opacity="0.7"/>
+  <path d="M362 200 l6 14 14 6 -14 6 -6 14 -6-14 -14-6 14-6z" fill="#9aa6f5" opacity="0.85"/>
+  <g transform="translate(112,106) scale(12.5)">
+    <path d="M19 12.5A7 7 0 1 1 11 4a5.4 5.4 0 0 0 8 8.5z" fill="url(#moon)"/>
   </g>
 </svg>

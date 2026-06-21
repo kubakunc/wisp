@@ -18,7 +18,7 @@
     stroke-linecap="round"
     stroke-linejoin="round"
   >
-    <path d="M3 12c3 0 3-4 6-4s3 8 6 8 3-4 6-4" />
+    <path d="M20.5 14.2A8.2 8.2 0 1 1 10.8 4.3a6.4 6.4 0 0 0 9.7 9.9z" />
   </svg>
 </div>
 

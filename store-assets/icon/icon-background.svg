@@ -1,24 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
-  <!--
-    Android Adaptive Icon — Background layer
-    Canvas: 108×108 dp — full bleed gradient, no artwork
-    Gradient matches icon-master primary: linear-gradient(150deg,#8b9af5,#7c8cf0,#b98cf0)
-  -->
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
+  <!-- Adaptive-icon background: dark night-sky radial. -->
   <defs>
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="0.87" y2="1" gradientUnits="objectBoundingBox">
-      <stop offset="0%"   stop-color="#8b9af5"/>
-      <stop offset="38%"  stop-color="#7c8cf0"/>
-      <stop offset="100%" stop-color="#b98cf0"/>
-    </linearGradient>
-    <!-- Subtle depth radial at bottom-right -->
-    <radialGradient id="depthBg" cx="80%" cy="120%" r="60%" gradientUnits="objectBoundingBox">
-      <stop offset="0%"   stop-color="#0c1226" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#0c1226" stop-opacity="0"/>
+    <radialGradient id="bg" cx="68%" cy="6%" r="120%">
+      <stop offset="0" stop-color="#2a2f5e"/>
+      <stop offset="0.6" stop-color="#0c1226"/>
+      <stop offset="1" stop-color="#0a0e1c"/>
     </radialGradient>
   </defs>
-
-  <!-- Full-bleed gradient background -->
-  <rect width="108" height="108" fill="url(#bgGrad)"/>
-  <!-- Depth overlay -->
-  <rect width="108" height="108" fill="url(#depthBg)"/>
+  <rect width="108" height="108" fill="url(#bg)"/>
 </svg>

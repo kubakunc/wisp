@@ -47,9 +47,9 @@ describe('WispMark', () => {
     expect(el?.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('renders the wisp SVG path inside', () => {
+  it('renders the brand (crescent moon) SVG path inside', () => {
     const { container } = render(WispMark);
     const path = container.querySelector('svg path');
-    expect(path?.getAttribute('d')).toContain('M3 12');
+    expect(path?.getAttribute('d')).toContain('M20.5 14.2');
   });
 });
