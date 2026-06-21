@@ -87,23 +87,17 @@ Before you can build, complete the one-time native configuration described in [d
 
 ## Where to drop sound files
 
-The sound registry at `src/lib/sounds/registry.ts` defines every sound and its asset path as `sounds/<id>.mp3`. The native-audio plugin reads files from the Android app's web assets directory, so files must be placed at:
+The sound catalogue is a plain JSON config at **`src/lib/sounds/sounds.json`** — each entry has `id`, `name` (shown in the app), `category` (`noise`/`nature`, picks the icon), `premium` (Pro vs free), and `file` (the audio filename). Edit that file to add/rename sounds or change pricing. Drop the audio files in the **committed source location**:
 
 ```
-android/app/src/main/assets/public/sounds/<id>.mp3
+static/sounds/<file>            ← e.g. static/sounds/rain.mp3
 ```
 
-After `cap sync` the build directory is copied there automatically, so you can also place files in:
+After `npm run build && npx cap sync android` they are copied into `android/app/src/main/assets/public/sounds/` and loaded natively via the `asset:///public/sounds/<file>` URI (handled by the audio adapter). A sound whose file is missing simply won't play; the rest of the app is unaffected.
 
-```
-static/sounds/<id>.mp3        ← committed source location
-```
+**Naming:** the `file` in `sounds.json` must match the filename in `static/sounds/` exactly.
 
-and they will be included in every subsequent `cap sync`.
-
-**Naming:** filenames must match the `id` field in the registry exactly (e.g. `rain.mp3`, `white-noise.mp3`, `rain-on-tent.mp3`).
-
-**Noise colors** (`white-noise`, `pink-noise`, `brown-noise`, `blue-noise`, `grey-noise`) must be pre-rendered offline from a noise generator — they cannot be recorded. Use a tool such as Audacity, SoX, or a Python script with `numpy`/`soundfile`.
+**Noise colors** (`white-noise`, `pink-noise`, `brown-noise`, `blue-noise`, `grey-noise`) ship as generated seamless-loop **WAV** files — run `node scripts/generate-noise.mjs` to (re)create them in `static/sounds/`. They are synthesized (white/pink/brown/blue/grey), not recorded.
 
 **Nature sounds** must be:
 - CC0 / royalty-free licensed (sources: Freesound.org CC0 filter, BBC Sound Effects, Zapsplat free tier)

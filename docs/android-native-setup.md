@@ -45,13 +45,19 @@ The opening tag should look like:
 
 ### 2c. Service declaration — inside `<application>`
 
-Add the `@mediagrid/capacitor-native-audio` background audio service:
+Add the `@mediagrid/capacitor-native-audio` background audio service. It extends a
+media3 `MediaSessionService`, so the `<intent-filter>` is REQUIRED (without it the
+plugin throws "Failed to resolve SessionToken" and audio never starts):
 
 ```xml
 <service
     android:name="us.mediagrid.capacitorjs.plugins.nativeaudio.AudioPlayerService"
     android:foregroundServiceType="mediaPlayback"
-    android:exported="false" />
+    android:exported="true">
+    <intent-filter>
+        <action android:name="androidx.media3.session.MediaSessionService" />
+    </intent-filter>
+</service>
 ```
 
 ### 2d. AdMob application ID — inside `<application>`
@@ -268,11 +274,15 @@ Complete `android/app/src/main/AndroidManifest.xml` after all patches (structure
 
         </activity>
 
-        <!-- @mediagrid/capacitor-native-audio background service -->
+        <!-- @mediagrid/capacitor-native-audio background service (media3 MediaSessionService) -->
         <service
             android:name="us.mediagrid.capacitorjs.plugins.nativeaudio.AudioPlayerService"
             android:foregroundServiceType="mediaPlayback"
-            android:exported="false" />
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
 
         <!-- AdMob: replace placeholder with real app ID before Play Store release -->
         <meta-data
