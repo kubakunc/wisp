@@ -5,6 +5,7 @@ import { createFakeNativeAudio } from '$lib/adapters/fakes/fakeNativeAudio';
 import { createFakePurchases } from '$lib/adapters/fakes/fakePurchases';
 import { createFakePreferences } from '$lib/adapters/fakes/fakePreferences';
 import { createFakeAnalytics } from '$lib/adapters/fakes/fakeAnalytics';
+import { createFakeAdMob } from '$lib/adapters/fakes/fakeAdMob';
 
 function makeApp(startPremium = false) {
   return createApp({
@@ -12,6 +13,7 @@ function makeApp(startPremium = false) {
     purchases: createFakePurchases({ startPremium }).adapter,
     preferences: createFakePreferences().adapter,
     analytics: createFakeAnalytics().adapter,
+    admob: createFakeAdMob().adapter,
     timerDeps: { fadeMs: 0 }
   });
 }
@@ -31,5 +33,12 @@ describe('app composition root', () => {
     const app = makeApp(true);
     await app.subscription.init('key');
     expect(get(app.subscription.isPremium)).toBe(true);
+  });
+
+  it('exposes an ads store with initial unknown consent', () => {
+    const app = makeApp();
+    const s = get(app.ads);
+    expect(s.consent).toBe('unknown');
+    expect(s.bannerVisible).toBe(false);
   });
 });
