@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Primary accent gradient: linear-gradient(150deg,#8b9af5,#7c8cf0,#b98cf0) -->
+    <linearGradient id="accentGrad" x1="0" y1="0" x2="0.87" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#8b9af5"/>
+      <stop offset="38%" stop-color="#7c8cf0"/>
+      <stop offset="100%" stop-color="#b98cf0"/>
+    </linearGradient>
+    <!-- Depth overlay radial -->
+    <radialGradient id="depthOverlay" cx="80%" cy="120%" r="60%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#0c1226" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#0c1226" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Rounded-square clip: 512×512 with ~112px radius (≈22%) -->
+    <clipPath id="roundSquare">
+      <rect width="512" height="512" rx="112" ry="112"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background: rounded square with accent gradient -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#accentGrad)"/>
+  <!-- Depth overlay -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#depthOverlay)"/>
+
+  <!-- Scattered star dots (from brand kit) -->
+  <!-- Scale from 240×240 reference: ×(512/240) ≈ ×2.133 -->
+  <circle cx="397" cy="132" r="6.4"  fill="#0c1226" opacity="0.50"/>
+  <circle cx="124" cy="102" r="5.1"  fill="#0c1226" opacity="0.40"/>
+  <circle cx="426" cy="213" r="4.3"  fill="#0c1226" opacity="0.35"/>
+
+  <!-- Wisp brand mark: path scaled to 150×150 centred in 512×512 -->
+  <!-- Original viewBox 0 0 24 24, rendered at 320×320 centred at (256,256) -->
+  <!-- Scale factor: 320/24 ≈ 13.33; origin offset: 256-(320/2)=96 -->
+  <g transform="translate(96,96) scale(13.333)">
+    <!-- Primary wisp wave -->
+    <path d="M2 14c3.2 0 3.2-4.2 6.4-4.2s3.2 8.4 6.4 8.4 3.2-4.2 6.8-4.2"
+          fill="none" stroke="#0c1226" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Secondary wisp hint (dimmed) -->
+    <path d="M2 9c3.2 0 3.2-3 6.4-3"
+          fill="none" stroke="#0c1226" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+  </g>
+</svg>

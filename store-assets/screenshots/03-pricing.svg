@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 720" width="360" height="720">
+  <!--
+    Screenshot 03 — "Premium for half the price — $39.99/yr"
+    Source: Wisp Marketing.dc.html SS3 composition
+    Rasterize at 1080×2160 (3×) for Play Console
+  -->
+  <defs>
+    <!-- Background: linear-gradient(170deg,#b98cf0,#7c8cf0 60%,#2a2f5e) -->
+    <linearGradient id="ss3Bg" x1="0.15" y1="0" x2="0.85" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%"   stop-color="#b98cf0"/>
+      <stop offset="60%"  stop-color="#7c8cf0"/>
+      <stop offset="100%" stop-color="#2a2f5e"/>
+    </linearGradient>
+    <!-- Phone inner bg -->
+    <radialGradient id="phoneBg3" cx="50%" cy="0%" r="110%" gradientUnits="objectBoundingBox">
+      <stop offset="0%"   stop-color="#23284f"/>
+      <stop offset="60%"  stop-color="#0a0e1c"/>
+      <stop offset="100%" stop-color="#0a0e1c"/>
+    </radialGradient>
+    <!-- Icon badge gradient -->
+    <linearGradient id="badgeGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7c8cf0"/>
+      <stop offset="100%" stop-color="#b98cf0"/>
+    </linearGradient>
+    <!-- Annual card highlight gradient -->
+    <linearGradient id="annualGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#23284a"/>
+      <stop offset="100%" stop-color="#1a1f3c"/>
+    </linearGradient>
+    <!-- CTA button gradient -->
+    <linearGradient id="ctaGrad3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7c8cf0"/>
+      <stop offset="100%" stop-color="#b98cf0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="360" height="720" fill="url(#ss3Bg)"/>
+
+  <!-- === CAPTION === -->
+  <text x="180" y="92" font-family="'Sora', system-ui, sans-serif" font-size="30" font-weight="700"
+        fill="#0c1226" text-anchor="middle" letter-spacing="-0.6">Premium for</text>
+  <text x="180" y="128" font-family="'Sora', system-ui, sans-serif" font-size="30" font-weight="700"
+        fill="#0c1226" text-anchor="middle" letter-spacing="-0.6">half the price</text>
+  <text x="180" y="156" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="14.5" font-weight="500"
+        fill="rgba(12,18,38,0.70)" text-anchor="middle">$39.99/yr vs. $50–70 elsewhere.</text>
+
+  <!-- === PHONE MOCK === -->
+  <rect x="46" y="250" width="268" height="510" rx="34" ry="34"
+        fill="url(#phoneBg3)" stroke="#1a1f3c" stroke-width="6"/>
+  <!-- Notch pill -->
+  <rect x="141" y="256" width="78" height="6" rx="3" fill="#1a1f3c"/>
+
+  <!-- Brand mark badge -->
+  <rect x="156" y="278" width="46" height="46" rx="14" fill="url(#badgeGrad)"/>
+  <!-- Wisp mark in badge -->
+  <g transform="translate(163,289) scale(1.35)">
+    <path d="M2 14c3.2 0 3.2-4.2 6.4-4.2s3.2 8.4 6.4 8.4 3.2-4.2 6.8-4.2"
+          fill="none" stroke="#0c1226" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- "Wisp Premium" title -->
+  <text x="180" y="348" font-family="'Sora', system-ui, sans-serif" font-size="19" font-weight="700"
+        fill="#eef1ff" text-anchor="middle">Wisp Premium</text>
+
+  <!-- Feature list -->
+  <!-- Checkmark: ✓ in accent -->
+  <!-- Row 1 -->
+  <g transform="translate(76,364)">
+    <path d="M0 7L5 12 14 0" fill="none" stroke="#9aa6f5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="100" y="376" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="12.5" font-weight="400"
+        fill="#dfe3f7">60+ premium sounds</text>
+  <!-- Row 2 -->
+  <g transform="translate(76,384)">
+    <path d="M0 7L5 12 14 0" fill="none" stroke="#9aa6f5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="100" y="396" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="12.5" font-weight="400"
+        fill="#dfe3f7">Unlimited saved mixes</text>
+  <!-- Row 3 -->
+  <g transform="translate(76,404)">
+    <path d="M0 7L5 12 14 0" fill="none" stroke="#9aa6f5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="100" y="416" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="12.5" font-weight="400"
+        fill="#dfe3f7">High-quality offline playback</text>
+
+  <!-- Annual card (highlighted, accent border) -->
+  <rect x="62" y="428" width="240" height="60" rx="16" fill="url(#annualGrad)" stroke="#7c8cf0" stroke-width="1.5"/>
+  <!-- "BEST VALUE" badge -->
+  <rect x="168" y="422" width="96" height="16" rx="8" fill="#7c8cf0"/>
+  <text x="216" y="433" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="9" font-weight="700"
+        fill="#0c1226" text-anchor="middle" letter-spacing="0.5">BEST VALUE · SAVE 60%</text>
+  <!-- Annual card content -->
+  <text x="76" y="450" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="14" font-weight="700"
+        fill="#eef1ff">Annual</text>
+  <text x="76" y="466" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="10" font-weight="400"
+        fill="#8d96bd">7-day free trial</text>
+  <!-- Price right -->
+  <text x="290" y="450" font-family="'Sora', system-ui, sans-serif" font-size="16" font-weight="700"
+        fill="#eef1ff" text-anchor="end">$3.33</text>
+  <text x="290" y="464" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="9" font-weight="400"
+        fill="#8d96bd" text-anchor="end">/mo · $39.99/yr</text>
+
+  <!-- Monthly card -->
+  <rect x="62" y="498" width="240" height="48" rx="14" fill="#141a30" stroke="#ffffff" stroke-width="0.5" opacity="0.97"/>
+  <rect x="62" y="498" width="240" height="48" rx="14" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.06"/>
+  <text x="76" y="518" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="14" font-weight="700"
+        fill="#eef1ff">Monthly</text>
+  <text x="76" y="534" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="10" font-weight="400"
+        fill="#8d96bd">Cancel anytime</text>
+  <text x="290" y="518" font-family="'Sora', system-ui, sans-serif" font-size="15" font-weight="700"
+        fill="#eef1ff" text-anchor="end">$6.99</text>
+  <text x="290" y="534" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="9" font-weight="400"
+        fill="#8d96bd" text-anchor="end">/mo</text>
+
+  <!-- CTA button -->
+  <rect x="62" y="558" width="240" height="46" rx="23" fill="url(#ctaGrad3)"/>
+  <text x="182" y="586" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="14" font-weight="700"
+        fill="#0c1226" text-anchor="middle">Start 7-day free trial</text>
+
+  <!-- Footer links -->
+  <text x="180" y="622" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="10" font-weight="400"
+        fill="#6b739a" text-anchor="middle">Restore purchases · Terms · Privacy</text>
+</svg>

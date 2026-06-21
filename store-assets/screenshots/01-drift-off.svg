@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 720" width="360" height="720">
+  <!--
+    Screenshot 01 — "Drift off in seconds"
+    Source: Wisp Marketing.dc.html SS1 composition
+    Rasterize at 1080×2160 (3×) for Play Console
+  -->
+  <defs>
+    <!-- Background: linear-gradient(170deg,#7c8cf0,#9a7fe0 55%,#3a2f6a) -->
+    <linearGradient id="ss1Bg" x1="0.15" y1="0" x2="0.85" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%"   stop-color="#7c8cf0"/>
+      <stop offset="55%"  stop-color="#9a7fe0"/>
+      <stop offset="100%" stop-color="#3a2f6a"/>
+    </linearGradient>
+    <!-- Phone bg -->
+    <linearGradient id="phoneBg1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0c1226"/>
+      <stop offset="100%" stop-color="#0a0e1c"/>
+    </linearGradient>
+    <!-- Active row bg -->
+    <linearGradient id="activeRow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#23284a"/>
+      <stop offset="100%" stop-color="#1a1f3c"/>
+    </linearGradient>
+    <!-- Favorite mix card -->
+    <linearGradient id="favGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7c8cf0"/>
+      <stop offset="100%" stop-color="#b98cf0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background gradient -->
+  <rect width="360" height="720" fill="url(#ss1Bg)"/>
+
+  <!-- === CAPTION SECTION (above phone) === -->
+  <!-- Headline -->
+  <text x="180" y="92" font-family="'Sora', system-ui, sans-serif" font-size="30" font-weight="700"
+        fill="#0c1226" text-anchor="middle" letter-spacing="-0.6">Drift off</text>
+  <text x="180" y="128" font-family="'Sora', system-ui, sans-serif" font-size="30" font-weight="700"
+        fill="#0c1226" text-anchor="middle" letter-spacing="-0.6">in seconds</text>
+  <text x="180" y="156" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="14.5" font-weight="500"
+        fill="rgba(12,18,38,0.70)" text-anchor="middle">Tap a sound. That's it.</text>
+
+  <!-- === PHONE MOCK (peeking up from bottom) === -->
+  <!-- Phone frame: 268×470, centred x=(360-268)/2=46, bottom edge at y=760 (below viewport for peek) -->
+  <rect x="46" y="250" width="268" height="510" rx="34" ry="34"
+        fill="url(#phoneBg1)" stroke="#1a1f3c" stroke-width="6"/>
+
+  <!-- Phone top pill notch area -->
+  <rect x="141" y="256" width="78" height="6" rx="3" fill="#1a1f3c"/>
+
+  <!-- "Sounds" header inside phone -->
+  <text x="68" y="302" font-family="'Sora', system-ui, sans-serif" font-size="18" font-weight="600"
+        fill="#eef1ff">Sounds</text>
+
+  <!-- Favorite mix card -->
+  <rect x="62" y="314" width="240" height="62" rx="18" fill="url(#favGrad)"/>
+  <text x="75" y="332" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="9" font-weight="700"
+        fill="rgba(12,18,38,0.60)" letter-spacing="1">FAVORITE MIX</text>
+  <text x="75" y="352" font-family="'Sora', system-ui, sans-serif" font-size="16" font-weight="700"
+        fill="#0c1226">Thunderstorm Cabin</text>
+  <text x="75" y="368" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="10" font-weight="500"
+        fill="rgba(12,18,38,0.60)">Rain · Thunder · Fire</text>
+
+  <!-- Sound rows -->
+  <!-- Row 1: Rain (active/on) -->
+  <rect x="62" y="390" width="240" height="48" rx="15" fill="url(#activeRow)" stroke="#7c8cf0" stroke-width="1" opacity="0.95"/>
+  <!-- Rain icon tile -->
+  <rect x="74" y="401" width="28" height="28" rx="9" fill="rgba(124,140,240,0.18)"/>
+  <g transform="translate(78,406) scale(0.72)">
+    <path d="M7 13.5a3.8 3.8 0 0 1 .5-7.5 4.8 4.8 0 0 1 9.2 1.3A3.4 3.4 0 0 1 16.7 14"
+          fill="none" stroke="#bcc6ff" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M8.5 17l-1 2.2M12 17l-1 2.2M15.5 17l-1 2.2"
+          fill="none" stroke="#bcc6ff" stroke-width="1.6" stroke-linecap="round"/>
+  </g>
+  <text x="112" y="410" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="14" font-weight="600" fill="#eef1ff">Rain</text>
+  <text x="112" y="426" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="10" font-weight="600" fill="#7c8cf0">On</text>
+  <!-- Toggle on -->
+  <rect x="262" y="406" width="32" height="20" rx="10" fill="#7c8cf0"/>
+  <circle cx="282" cy="416" r="8" fill="#0c1226"/>
+
+  <!-- Row 2: Ocean (off) -->
+  <rect x="62" y="448" width="240" height="48" rx="15" fill="#141a30" stroke="#ffffff" stroke-width="1" opacity="0.97"/>
+  <rect x="62" y="448" width="240" height="48" rx="15" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.04"/>
+  <rect x="74" y="459" width="28" height="28" rx="9" fill="rgba(255,255,255,0.04)"/>
+  <g transform="translate(78,464) scale(0.72)">
+    <path d="M2 8.5c2 0 2-1.6 4-1.6s2 1.6 4 1.6 2-1.6 4-1.6 2 1.6 4 1.6" fill="none" stroke="#8d96bd" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M2 13c2 0 2-1.6 4-1.6s2 1.6 4 1.6 2-1.6 4-1.6 2 1.6 4 1.6" fill="none" stroke="#8d96bd" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M2 17.5c2 0 2-1.6 4-1.6s2 1.6 4 1.6 2-1.6 4-1.6 2 1.6 4 1.6" fill="none" stroke="#8d96bd" stroke-width="1.6" stroke-linecap="round"/>
+  </g>
+  <text x="112" y="468" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="14" font-weight="600" fill="#dfe3f7">Ocean</text>
+  <!-- Toggle off -->
+  <rect x="262" y="464" width="32" height="20" rx="10" fill="#262b46"/>
+  <circle cx="272" cy="474" r="8" fill="#5b6488"/>
+
+  <!-- Row 3: Fire (off) -->
+  <rect x="62" y="506" width="240" height="48" rx="15" fill="#141a30"/>
+  <rect x="62" y="506" width="240" height="48" rx="15" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.04"/>
+  <rect x="74" y="517" width="28" height="28" rx="9" fill="rgba(255,255,255,0.04)"/>
+  <g transform="translate(78,522) scale(0.72)">
+    <path d="M12 3c.6 2.6 3.6 3.7 3.6 7.6a3.6 3.6 0 1 1-7.2 0c0-2 1.4-3 2-4 .8 1 1.6 1.4 1.6 0z"
+          fill="none" stroke="#8d96bd" stroke-width="1.6" stroke-linecap="round"/>
+  </g>
+  <text x="112" y="526" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="14" font-weight="600" fill="#dfe3f7">Fire</text>
+  <!-- Toggle off -->
+  <rect x="262" y="522" width="32" height="20" rx="10" fill="#262b46"/>
+  <circle cx="272" cy="532" r="8" fill="#5b6488"/>
+</svg>
