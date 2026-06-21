@@ -35,6 +35,8 @@
     "@capacitor/core": "^8.4.1",
     "@capacitor/preferences": "^8.0.1",
     "@mediagrid/capacitor-native-audio": "^3.0.0",
+    "@capacitor-firebase/analytics": "^8.3.0",
+    "@capacitor-firebase/app": "^8.3.0",
     "@revenuecat/purchases-capacitor": "^13.2.0"
   }
 }

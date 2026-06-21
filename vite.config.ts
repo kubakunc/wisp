@@ -17,6 +17,7 @@ export default defineConfig({
         'src/lib/adapters/nativeAudio.ts',
         'src/lib/adapters/purchases.ts',
         'src/lib/adapters/preferences.ts',
+        'src/lib/adapters/analytics.ts',
         'src/lib/adapters/fakes/**',
         'src/lib/**/*.test.ts',
         'src/lib/types.ts'

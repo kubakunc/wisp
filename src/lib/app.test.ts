@@ -4,12 +4,14 @@ import { createApp } from './app';
 import { createFakeNativeAudio } from '$lib/adapters/fakes/fakeNativeAudio';
 import { createFakePurchases } from '$lib/adapters/fakes/fakePurchases';
 import { createFakePreferences } from '$lib/adapters/fakes/fakePreferences';
+import { createFakeAnalytics } from '$lib/adapters/fakes/fakeAnalytics';
 
 function makeApp(startPremium = false) {
   return createApp({
     audio: createFakeNativeAudio().adapter,
     purchases: createFakePurchases({ startPremium }).adapter,
     preferences: createFakePreferences().adapter,
+    analytics: createFakeAnalytics().adapter,
     timerDeps: { fadeMs: 0 }
   });
 }
