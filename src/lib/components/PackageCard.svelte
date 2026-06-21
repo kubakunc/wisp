@@ -9,19 +9,21 @@
 
   const isAnnual = $derived(pkg.packageType === 'ANNUAL');
 
-  // Derive a per-month label for annual packages
+  // Derive a per-month label for annual packages as a value
   // Try to parse the priceString (e.g. "$39.99") and divide by 12
-  const perMonthLabel = $derived((): string | null => {
-    if (!isAnnual) return null;
-    const match = pkg.priceString.match(/[\d.,]+/);
-    if (!match) return null;
-    const annual = parseFloat(match[0].replace(',', '.'));
-    if (isNaN(annual)) return null;
-    const perMonth = annual / 12;
-    // Format to 2 decimal places with same currency symbol
-    const sym = pkg.priceString.replace(/[\d.,\s]+/, '').trim() || '$';
-    return `${sym}${perMonth.toFixed(2)}/month`;
-  });
+  const perMonthLabel = $derived(
+    (() => {
+      if (!isAnnual) return null;
+      const match = pkg.priceString.match(/[\d.,]+/);
+      if (!match) return null;
+      const annual = parseFloat(match[0].replace(',', '.'));
+      if (isNaN(annual)) return null;
+      const perMonth = annual / 12;
+      // Format to 2 decimal places with same currency symbol
+      const sym = pkg.priceString.replace(/[\d.,\s]+/, '').trim() || '$';
+      return `${sym}${perMonth.toFixed(2)}/month`;
+    })()
+  );
 </script>
 
 <button
@@ -44,8 +46,8 @@
     <span class="per">/ {isAnnual ? 'year' : 'month'}</span>
   </div>
 
-  {#if isAnnual && perMonthLabel()}
-    <span class="per-month">{perMonthLabel()}</span>
+  {#if isAnnual && perMonthLabel}
+    <span class="per-month">{perMonthLabel}</span>
   {/if}
 
   {#if featured && isAnnual}

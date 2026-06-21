@@ -30,8 +30,8 @@
       'M7 13a4 4 0 0 1 .5-7.9 5 5 0 0 1 9.5 1.3A3.4 3.4 0 0 1 16.7 13',
       'M12 12l-2 4h3l-2 4'
     ],
-    // White noise: tall uniform bars — broadband, flat spectrum
-    'white-noise': ['M3 12h2M7 7v10M11 4v16M15 7v10M19 10v4'],
+    // White noise: 5 uniform full-height bars — broadband flat spectrum (distinct from fan's varying bars)
+    'white-noise': ['M3 6v12M7 6v12M11 6v12M15 6v12M19 6v12'],
     // Pink noise: descending bars left to right — 1/f spectrum
     'pink-noise': ['M3 9v6M7 5v14M11 8v8M15 11v2'],
     // Brown noise: steep bass-heavy bars — 1/f² spectrum

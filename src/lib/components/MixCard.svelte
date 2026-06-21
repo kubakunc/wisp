@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Mix } from '$lib/types';
   import { getSound } from '$lib/sounds/registry';
-  import SoundIcon from './SoundIcon.svelte';
 
   let { mix, playing, onPlay, onDelete }: {
     mix: Mix;
@@ -10,7 +9,6 @@
     onDelete: () => void;
   } = $props();
 
-  const previewLayers = $derived(mix.layers.slice(0, 3));
   const layerNames = $derived(
     mix.layers
       .map((l) => getSound(l.soundId)?.name ?? l.soundId)

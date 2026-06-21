@@ -59,7 +59,7 @@
     justify-content: center;
     gap: 4px;
     padding: 10px 0 12px;
-    color: #5b6488;
+    color: var(--locked);
     transition: color 0.15s;
     text-decoration: none;
   }

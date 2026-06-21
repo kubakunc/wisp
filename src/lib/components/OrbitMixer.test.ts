@@ -96,4 +96,21 @@ describe('OrbitMixer', () => {
     const selectedNodes = container.querySelectorAll('.orbit-node.selected');
     expect(selectedNodes.length).toBe(1);
   });
+
+  it('renders the progress ring SVG with gradient and arc circles', () => {
+    const { container } = render(OrbitMixer, {
+      layers: [{ soundId: 'rain', volume: 0.8 }],
+      selectedId: null, timerLabel: 'Off', playing: false,
+      onSelect: () => {}, onTogglePlay: () => {}, onAdd: () => {}
+    });
+    // Progress ring SVG must exist
+    const ringSvg = container.querySelector('svg.progress-ring');
+    expect(ringSvg).toBeTruthy();
+    // Linear gradient def must be present
+    const gradient = container.querySelector('linearGradient#ring-grad');
+    expect(gradient).toBeTruthy();
+    // Track and arc circles
+    const circles = container.querySelectorAll('svg.progress-ring circle');
+    expect(circles.length).toBe(2);
+  });
 });

@@ -21,6 +21,46 @@
     <!-- breathing glow -->
     <div class="orb-glow" class:active={playing} aria-hidden="true"></div>
 
+    <!-- progress ring around the central orb -->
+    <svg
+      class="progress-ring"
+      aria-hidden="true"
+      viewBox="0 0 200 200"
+      width="200"
+      height="200"
+    >
+      <defs>
+        <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="var(--accent-1)" />
+          <stop offset="100%" stop-color="var(--accent-2)" />
+        </linearGradient>
+      </defs>
+      <!-- track circle -->
+      <circle
+        class="ring-track"
+        cx="100"
+        cy="100"
+        r="48"
+        fill="none"
+        stroke="var(--track)"
+        stroke-width="3"
+      />
+      <!-- arc circle: 2/3 filled, starting from top (-90deg rotation) -->
+      <circle
+        class="ring-arc"
+        cx="100"
+        cy="100"
+        r="48"
+        fill="none"
+        stroke="url(#ring-grad)"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-dasharray="201 100"
+        stroke-dashoffset="0"
+        transform="rotate(-90 100 100)"
+      />
+    </svg>
+
     <!-- central play/timer orb -->
     <button
       class="orb"
@@ -49,7 +89,7 @@
         id={layer.soundId}
         volume={layer.volume}
         selected={selectedId === layer.soundId}
-        angleDeg={angleForIndex(i, layers.length)}
+        angleDeg={angleForIndex(i, layers.length + 1)}
         onSelect={() => onSelect(layer.soundId)}
       />
     {/each}
@@ -87,6 +127,14 @@
     width: 320px;
     height: 320px;
     flex-shrink: 0;
+  }
+
+  .progress-ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
   }
 
   .orb-glow {

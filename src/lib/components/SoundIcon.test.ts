@@ -68,6 +68,8 @@ describe('SoundIcon', () => {
     const d1 = c1.querySelector('path')?.getAttribute('d');
     const d2 = c2.querySelector('path')?.getAttribute('d');
     expect(d1).not.toBe(d2);
+    // white-noise uses uniform full-height bars (M3 6v12...)
+    expect(d2).toBe('M3 6v12M7 6v12M11 6v12M15 6v12M19 6v12');
   });
 
   it('noise colors all have distinct paths from each other', () => {

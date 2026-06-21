@@ -27,7 +27,14 @@
     aria-hidden="true"
   ></div>
 
-  <div class="sheet" role="dialog" aria-label="Sleep timer" aria-modal="true">
+  <div
+    class="sheet"
+    role="dialog"
+    aria-label="Sleep timer"
+    aria-modal="true"
+    tabindex="-1"
+    onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }}
+  >
     <div class="handle" aria-hidden="true"></div>
 
     <h2 class="sheet-title">Sleep timer</h2>

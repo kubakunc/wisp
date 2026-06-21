@@ -105,4 +105,14 @@ describe('TimerSheet', () => {
     });
     expect(screen.getByText('Sleep timer')).toBeTruthy();
   });
+
+  it('calls onClose when Escape key is pressed on the dialog', async () => {
+    const onClose = vi.fn();
+    render(TimerSheet, {
+      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose
+    });
+    const dialog = screen.getByRole('dialog');
+    await fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledOnce();
+  });
 });
