@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '../app.css';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { app, RC_API_KEY } from '$lib/app';
