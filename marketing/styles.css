@@ -121,8 +121,8 @@ button:focus-visible {
   border: 0;
 }
 
-/* Scroll-reveal: set by JS */
-.reveal {
+/* Scroll-reveal: hidden initial state gated behind .js — so no-JS/crawlers/screenshots see content */
+.js .reveal {
   opacity: 0;
   transform: translateY(28px);
   transition:
@@ -136,7 +136,7 @@ button:focus-visible {
 }
 
 /* Stagger children */
-.reveal-stagger > * {
+.js .reveal-stagger > * {
   opacity: 0;
   transform: translateY(20px);
   transition:
@@ -150,6 +150,16 @@ button:focus-visible {
 .reveal-stagger.visible > *:nth-child(4) { transition-delay: 0.29s; opacity: 1; transform: none; }
 .reveal-stagger.visible > *:nth-child(5) { transition-delay: 0.37s; opacity: 1; transform: none; }
 .reveal-stagger.visible > *:nth-child(6) { transition-delay: 0.45s; opacity: 1; transform: none; }
+
+/* Respect reduced-motion preference: force everything visible, no transitions */
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .js .reveal,
+  .reveal-stagger > *, .js .reveal-stagger > * {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
 
 /* ============================================================
    Layout Container
