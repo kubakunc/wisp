@@ -8,3 +8,6 @@ android/app/build/
 android/.gradle/
 .DS_Store
 .env
+
+# Generated store-asset rasterizations (sources are the .svg files; regenerate via store-assets/README.md)
+store-assets/**/*.png
