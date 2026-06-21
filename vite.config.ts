@@ -1,6 +1,7 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
 import type { Plugin } from 'vite';
+import { svelteTesting } from '@testing-library/svelte/vite';
 
 /**
  * Vite plugin that silences sourcemap warnings for third-party packages
@@ -27,7 +28,7 @@ function silenceDepSourcemapWarnings(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [sveltekit(), silenceDepSourcemapWarnings()],
+  plugins: [sveltekit(), silenceDepSourcemapWarnings(), svelteTesting()],
   test: {
     environment: 'jsdom',
     globals: true,
