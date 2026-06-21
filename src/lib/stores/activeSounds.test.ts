@@ -46,18 +46,31 @@ describe('activeSounds store', () => {
     ]);
   });
 
+  it('setVolume on an inactive id is a no-op', async () => {
+    const { store, state } = make();
+    await store.setVolume('rain', 0.5);
+    expect(get(store)).toEqual({});
+    expect(state.tracks.has('rain')).toBe(false);
+  });
+
   it('applyMix replaces active sounds with the mix layers', async () => {
-    const { store } = make();
+    const { store, state } = make();
     await store.toggle('ocean');
     await store.applyMix({ id: 'm', name: 'x', layers: [{ soundId: 'rain', volume: 0.6 }, { soundId: 'fan', volume: 0.2 }] });
     expect(get(store)).toEqual({ rain: 0.6, fan: 0.2 });
+    expect(state.tracks.has('ocean')).toBe(false);
+    expect(state.tracks.get('rain')?.playing).toBe(true);
+    expect(state.tracks.get('rain')?.volume).toBe(0.6);
+    expect(state.tracks.get('fan')?.playing).toBe(true);
+    expect(state.tracks.get('fan')?.volume).toBe(0.2);
   });
 
   it('stopAll clears everything', async () => {
-    const { store } = make();
+    const { store, state } = make();
     await store.toggle('rain');
     await store.toggle('fan');
     await store.stopAll();
     expect(get(store)).toEqual({});
+    expect(state.tracks.size).toBe(0);
   });
 });

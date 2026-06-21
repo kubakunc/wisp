@@ -30,8 +30,9 @@ export function createActiveSoundsStore(engine: AudioEngine) {
       }
     },
     async setVolume(soundId: string, volume: number): Promise<void> {
+      if (!isActive(soundId)) return;
       await engine.setVolume(soundId, volume);
-      update((s) => (soundId in s ? { ...s, [soundId]: volume } : s));
+      update((s) => ({ ...s, [soundId]: volume }));
     },
     currentLayers(): MixLayer[] {
       const s = get({ subscribe });
@@ -39,11 +40,13 @@ export function createActiveSoundsStore(engine: AudioEngine) {
     },
     async applyMix(mix: Mix): Promise<void> {
       await stopAll();
+      const newState: Record<string, number> = {};
       for (const layer of mix.layers) {
         await engine.play(layer.soundId);
         await engine.setVolume(layer.soundId, layer.volume);
-        update((s) => ({ ...s, [layer.soundId]: layer.volume }));
+        newState[layer.soundId] = layer.volume;
       }
+      set(newState);
     },
     stopAll
   };
