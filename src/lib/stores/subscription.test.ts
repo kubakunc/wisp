@@ -48,6 +48,7 @@ describe('subscription store', () => {
 
   it('lists packages through the store', async () => {
     const { store } = makeStore();
+    await store.init('key');
     const pkgs = await store.listPackages();
     expect(pkgs.length).toBe(2);
   });
