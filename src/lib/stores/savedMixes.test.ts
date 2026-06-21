@@ -43,11 +43,20 @@ describe('savedMixes store', () => {
   });
 
   it('rename and remove work', async () => {
-    const { store } = make();
+    const { store, prefStore } = make();
     const mix = await store.save('A', layers, true);
     await store.rename(mix.id, 'Renamed');
     expect(get(store)[0].name).toBe('Renamed');
+    expect(prefStore.get('wisp.mixes')).toContain('Renamed');
     await store.remove(mix.id);
     expect(get(store)).toEqual([]);
+    expect(prefStore.get('wisp.mixes')).not.toContain(mix.id);
+  });
+
+  it('uses the counter-based default idGen when none injected', async () => {
+    const storage = createStorageService(createFakePreferences().adapter);
+    const store = createSavedMixesStore(storage);
+    const mix = await store.save('A', layers, true);
+    expect(mix.id).toBe('mix-1');
   });
 });

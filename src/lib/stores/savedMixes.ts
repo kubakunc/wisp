@@ -10,11 +10,16 @@ function defaultIdGen(): () => string {
 }
 
 export function createSavedMixesStore(storage: StorageService, idGen: () => string = defaultIdGen()) {
-  const { subscribe, set, update: _update } = writable<Mix[]>([]);
+  const { subscribe, set } = writable<Mix[]>([]);
 
   async function persist(mixes: Mix[]): Promise<void> {
     set(mixes);
     await storage.saveMixes(mixes);
+  }
+
+  function canSave(isPremium: boolean): boolean {
+    if (isPremium) return true;
+    return get({ subscribe }).length < FREE_MIX_LIMIT;
   }
 
   return {
@@ -22,12 +27,9 @@ export function createSavedMixesStore(storage: StorageService, idGen: () => stri
     async load(): Promise<void> {
       set(await storage.loadMixes());
     },
-    canSave(isPremium: boolean): boolean {
-      if (isPremium) return true;
-      return get({ subscribe }).length < FREE_MIX_LIMIT;
-    },
+    canSave,
     async save(name: string, layers: MixLayer[], isPremium: boolean): Promise<Mix> {
-      if (!this.canSave(isPremium)) throw new Error('FREE_MIX_LIMIT');
+      if (!canSave(isPremium)) throw new Error('FREE_MIX_LIMIT');
       const mix: Mix = { id: idGen(), name, layers };
       await persist([...get({ subscribe }), mix]);
       return mix;
