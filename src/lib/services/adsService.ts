@@ -23,8 +23,9 @@ export function createAdsService(adapter: AdMobAdapter, opts?: AdsServiceOpts) {
     /**
      * Show the banner ONLY when the user is not premium AND consent was obtained/not_required.
      * Premium users or unavailable consent → banner is removed (never shown or actively removed).
+     * Returns true when the banner is now visible, false when it was removed/hidden.
      */
-    async showIfEligible(isPremium: boolean): Promise<void> {
+    async showIfEligible(isPremium: boolean): Promise<boolean> {
       const canShow =
         !isPremium &&
         (lastConsent === 'obtained' || lastConsent === 'not_required');
@@ -34,6 +35,8 @@ export function createAdsService(adapter: AdMobAdapter, opts?: AdsServiceOpts) {
       } else {
         await adapter.removeBanner();
       }
+
+      return canShow;
     },
 
     /** Temporarily hide the banner (can be resumed). */

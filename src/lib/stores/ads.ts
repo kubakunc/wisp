@@ -24,16 +24,11 @@ export function createAdsStore(svc: AdsService) {
 
     /**
      * Sync banner visibility with the user's premium status.
-     * Calls showIfEligible and updates bannerVisible accordingly.
+     * Calls showIfEligible and updates bannerVisible from the service's returned boolean.
      */
     async sync(isPremium: boolean): Promise<void> {
-      await svc.showIfEligible(isPremium);
-      // Banner is visible only when not premium and consent allows ads
-      update((s) => ({
-        ...s,
-        bannerVisible:
-          !isPremium && (s.consent === 'obtained' || s.consent === 'not_required')
-      }));
+      const bannerVisible = await svc.showIfEligible(isPremium);
+      update((s) => ({ ...s, bannerVisible }));
     },
 
     /** Temporarily hide the banner and update store state. */

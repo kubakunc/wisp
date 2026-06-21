@@ -8,32 +8,36 @@ describe('adsService', () => {
     const { adapter, state } = createFakeAdMob({ consent: 'obtained' });
     const svc = createAdsService(adapter);
     await svc.init();
-    await svc.showIfEligible(false);
+    const visible = await svc.showIfEligible(false);
     expect(state.bannerShown).toBe(true);
+    expect(visible).toBe(true);
   });
 
   it('never shows a banner for premium users', async () => {
     const { adapter, state } = createFakeAdMob({ consent: 'obtained' });
     const svc = createAdsService(adapter);
     await svc.init();
-    await svc.showIfEligible(true);
+    const visible = await svc.showIfEligible(true);
     expect(state.bannerShown).toBe(false);
+    expect(visible).toBe(false);
   });
 
   it('does not show when consent is unavailable', async () => {
     const { adapter, state } = createFakeAdMob({ consent: 'unavailable' });
     const svc = createAdsService(adapter);
     await svc.init();
-    await svc.showIfEligible(false);
+    const visible = await svc.showIfEligible(false);
     expect(state.bannerShown).toBe(false);
+    expect(visible).toBe(false);
   });
 
   it('shows banner for free users when consent is not_required', async () => {
     const { adapter, state } = createFakeAdMob({ consent: 'not_required' });
     const svc = createAdsService(adapter);
     await svc.init();
-    await svc.showIfEligible(false);
+    const visible = await svc.showIfEligible(false);
     expect(state.bannerShown).toBe(true);
+    expect(visible).toBe(true);
   });
 
   it('init returns the consent result', async () => {

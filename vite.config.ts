@@ -1,8 +1,33 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
+import type { Plugin } from 'vite';
+
+/**
+ * Vite plugin that silences sourcemap warnings for third-party packages
+ * that ship compiled output without the original source files.
+ * Runs after Vitest installs its own customLogger so we patch it post-resolve.
+ */
+function silenceDepSourcemapWarnings(): Plugin {
+  return {
+    name: 'silence-dep-sourcemap-warnings',
+    enforce: 'post',
+    configResolved(config) {
+      const original = config.logger.warnOnce.bind(config.logger);
+      config.logger.warnOnce = (msg, opts) => {
+        if (msg.includes('Sourcemap for') && msg.includes('points to missing source files')) return;
+        original(msg, opts);
+      };
+      const originalWarn = config.logger.warn.bind(config.logger);
+      config.logger.warn = (msg, opts) => {
+        if (msg.includes('Sourcemap for') && msg.includes('points to missing source files')) return;
+        originalWarn(msg, opts);
+      };
+    }
+  };
+}
 
 export default defineConfig({
-  plugins: [sveltekit()],
+  plugins: [sveltekit(), silenceDepSourcemapWarnings()],
   test: {
     environment: 'jsdom',
     globals: true,
