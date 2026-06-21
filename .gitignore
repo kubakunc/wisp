@@ -1,0 +1,10 @@
+node_modules/
+.svelte-kit/
+build/
+coverage/
+test-results/
+playwright-report/
+android/app/build/
+android/.gradle/
+.DS_Store
+.env
