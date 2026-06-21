@@ -48,5 +48,13 @@ export function createApp(deps: AppDeps = {}) {
 export const RC_API_KEY: string =
   (import.meta as { env?: Record<string, string> }).env?.VITE_RC_API_KEY ?? '';
 
-export const app = createApp();
+// TestHook mirrors AppDeps — include EVERY adapter createApp accepts (audio, purchases,
+// preferences, analytics, admob) so the browser build never touches a real native plugin.
+type TestHook = AppDeps;
+const testDeps: TestHook =
+  typeof window !== 'undefined' && (window as unknown as { __WISP_TEST__?: TestHook }).__WISP_TEST__
+    ? (window as unknown as { __WISP_TEST__: TestHook }).__WISP_TEST__
+    : {};
+
+export const app = createApp(testDeps);
 export type App = ReturnType<typeof createApp>;
