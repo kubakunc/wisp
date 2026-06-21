@@ -121,7 +121,115 @@ Alternatively, add the key directly to `ios/App/App/Info.plist`:
 
 ---
 
-## 6. Final AndroidManifest reference
+## 6. Adaptive launcher icon
+
+Wire the Wisp adaptive icon so every modern Android launcher shows the correct foreground graphic over the deep-space gradient background. The source SVGs live in `store-assets/icon/`.
+
+### 6a. Rasterize the SVG layers
+
+The `108 dp` canvas used by adaptive icons maps to the following pixel sizes across density buckets:
+
+| Density | dp → px factor | Required size |
+|---------|---------------|---------------|
+| mdpi    | ×1            | 108 × 108 px  |
+| hdpi    | ×1.5          | 162 × 162 px  |
+| xhdpi   | ×2            | 216 × 216 px  |
+| xxhdpi  | ×3            | 324 × 324 px  |
+| xxxhdpi | ×4            | 432 × 432 px  |
+
+Use `resvg` (fast, accurate) or `rsvg-convert` (librsvg):
+
+```bash
+# resvg — install: cargo install resvg  OR  brew install resvg
+for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+  case $density in
+    mdpi)    PX=108 ;;
+    hdpi)    PX=162 ;;
+    xhdpi)   PX=216 ;;
+    xxhdpi)  PX=324 ;;
+    xxxhdpi) PX=432 ;;
+  esac
+  DIR="android/app/src/main/res/mipmap-$density"
+  mkdir -p "$DIR"
+  resvg -w $PX -h $PX store-assets/icon/icon-foreground.svg "$DIR/ic_launcher_foreground.png"
+  resvg -w $PX -h $PX store-assets/icon/icon-background.svg "$DIR/ic_launcher_background.png"
+  # Legacy square icon (no adaptive support)
+  resvg -w $PX -h $PX store-assets/icon/icon-master.svg     "$DIR/ic_launcher.png"
+  # Round icon variant used by some launchers
+  resvg -w $PX -h $PX store-assets/icon/icon-master.svg     "$DIR/ic_launcher_round.png"
+done
+```
+
+Equivalent `rsvg-convert` (librsvg) commands:
+
+```bash
+# rsvg-convert — install: brew install librsvg  OR  apt install librsvg2-bin
+for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+  case $density in
+    mdpi)    PX=108 ;;
+    hdpi)    PX=162 ;;
+    xhdpi)   PX=216 ;;
+    xxhdpi)  PX=324 ;;
+    xxxhdpi) PX=432 ;;
+  esac
+  DIR="android/app/src/main/res/mipmap-$density"
+  mkdir -p "$DIR"
+  rsvg-convert -w $PX -h $PX store-assets/icon/icon-foreground.svg -o "$DIR/ic_launcher_foreground.png"
+  rsvg-convert -w $PX -h $PX store-assets/icon/icon-background.svg -o "$DIR/ic_launcher_background.png"
+  rsvg-convert -w $PX -h $PX store-assets/icon/icon-master.svg     -o "$DIR/ic_launcher.png"
+  rsvg-convert -w $PX -h $PX store-assets/icon/icon-master.svg     -o "$DIR/ic_launcher_round.png"
+done
+```
+
+Alternatively, use **Android Studio Image Asset Studio**: right-click `android/app/src/main/res` → **New → Image Asset**, choose **Launcher Icons (Adaptive and Legacy)**, select **Source Asset → Image**, point the Foreground layer at `icon-foreground.svg` and the Background layer at `icon-background.svg`, and let Studio generate all densities automatically.
+
+### 6b. Create the adaptive icon XML
+
+Create the directory `android/app/src/main/res/mipmap-anydpi-v26/` and add the following two files:
+
+**`android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml`**
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@mipmap/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>
+```
+
+**`android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml`**
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@mipmap/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>
+```
+
+### 6c. Background color note
+
+`icon-background.svg` uses the Wisp deep-space gradient (`#0c1226` → `#0a0e1c` with a radial highlight). Rasterizing it into per-density PNGs is correct; alternatively you can replace the `<background>` drawable reference with a solid color value:
+
+```xml
+<background android:drawable="@color/ic_launcher_background" />
+```
+
+and add to `android/app/src/main/res/values/colors.xml`:
+
+```xml
+<color name="ic_launcher_background">#0C1226</color>
+```
+
+Using a solid color is slightly smaller on disk and renders crisply at any scale, but loses the gradient. Use the PNG approach (`icon-background.svg` rasterized) to preserve the gradient.
+
+### 6d. Verify in Android Studio
+
+After placing all files, open the project in Android Studio and select **Build → Clean Project**, then **Build → Rebuild Project**. In the Project view, navigate to `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` and click the preview icon — you should see the Wisp wave mark centred on the dark gradient background.
+
+---
+
+## 7. Final AndroidManifest reference
 
 Complete `android/app/src/main/AndroidManifest.xml` after all patches (structure only — Capacitor fills in the rest):
 
