@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { get } from 'svelte/store';
 import { createTimerStore } from './timer';
 import { createAudioEngine } from '$lib/services/audioEngine';
@@ -66,5 +66,31 @@ describe('timer store', () => {
     store.startPreset(15);
     await fire();
     expect(engine.activeIds()).toEqual([]);
+  });
+
+  it('concurrent fireNow calls fade audio only once', async () => {
+    const { engine, store } = make();
+    await engine.play('rain');
+    store.startPreset(15);
+    let fadeCount = 0;
+    const originalFadeOutAll = engine.fadeOutAll.bind(engine);
+    engine.fadeOutAll = async (ms: number) => {
+      fadeCount++;
+      await originalFadeOutAll(ms);
+    };
+    await Promise.all([store.fireNow(), store.fireNow()]);
+    expect(fadeCount).toBe(1);
+    expect(engine.activeIds()).toEqual([]);
+    expect(get(store).mode).toBe('off');
+  });
+
+  it('constructs with production defaults (no injected deps)', () => {
+    const { adapter } = createFakeNativeAudio();
+    const engine = createAudioEngine(adapter);
+    const store = createTimerStore(engine); // real performance.now + setTimeout + clearTimeout
+    store.startPreset(1);          // schedules a real setTimeout (1 min) — we won't wait
+    expect(get(store).mode).toBe('preset');
+    store.cancel();                // clears the real timeout immediately
+    expect(get(store).mode).toBe('off');
   });
 });

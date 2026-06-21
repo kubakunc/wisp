@@ -21,6 +21,7 @@ export function createTimerStore(engine: AudioEngine, deps: TimerDeps = {}) {
 
   const { subscribe, set } = writable<TimerState>({ ...OFF });
   let handle: TimerHandle | null = null;
+  let firing = false;
 
   function clear() {
     if (handle !== null) {
@@ -30,9 +31,15 @@ export function createTimerStore(engine: AudioEngine, deps: TimerDeps = {}) {
   }
 
   async function fireNow(): Promise<void> {
-    clear();
-    await engine.fadeOutAll(fadeMs);
-    set({ ...OFF });
+    if (firing) return;
+    firing = true;
+    try {
+      clear();
+      await engine.fadeOutAll(fadeMs);
+      set({ ...OFF });
+    } finally {
+      firing = false;
+    }
   }
 
   function startTimed(mode: 'preset' | 'custom', minutes: number) {
