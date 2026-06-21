@@ -115,4 +115,61 @@ describe('TimerSheet', () => {
     await fireEvent.keyDown(dialog, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  // Task 13 — Custom timer fixes
+  it('Custom chip calls onPick with "custom"', async () => {
+    const onPick = vi.fn();
+    render(TimerSheet, {
+      open: true, selected: null, onPick, onStart: () => {}, onClose: () => {}
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Custom' }));
+    expect(onPick).toHaveBeenCalledWith('custom');
+  });
+
+  it('Custom chip reveals the numeric stepper input', async () => {
+    const onPick = vi.fn();
+    render(TimerSheet, {
+      open: true, selected: 'custom', onPick, onStart: () => {}, onClose: () => {}
+    });
+    // The stepper input should be visible when selected === 'custom'
+    const input = screen.getByRole('spinbutton', { name: /custom timer duration/i });
+    expect(input).toBeTruthy();
+  });
+
+  it('changing the custom input calls onPick with the numeric value', async () => {
+    const onPick = vi.fn();
+    render(TimerSheet, {
+      open: true, selected: 'custom', onPick, onStart: () => {}, onClose: () => {}
+    });
+    const input = screen.getByRole('spinbutton', { name: /custom timer duration/i });
+    await fireEvent.input(input, { target: { valueAsNumber: 45 } });
+    expect(onPick).toHaveBeenCalledWith(45);
+  });
+
+  it('CTA shows the chosen custom minutes when a number is active from custom flow', () => {
+    render(TimerSheet, {
+      open: true, selected: 45, onPick: () => {}, onStart: () => {}, onClose: () => {}
+    });
+    expect(screen.getByRole('button', { name: 'Start timer · 45 min' })).toBeTruthy();
+  });
+
+  it('stepper − button calls onPick with decremented value', async () => {
+    const onPick = vi.fn();
+    render(TimerSheet, {
+      open: true, selected: 'custom', onPick, onStart: () => {}, onClose: () => {}
+    });
+    await fireEvent.click(screen.getByRole('button', { name: /decrease by 5/i }));
+    // default is 20, -5 = 15
+    expect(onPick).toHaveBeenCalledWith(15);
+  });
+
+  it('stepper + button calls onPick with incremented value', async () => {
+    const onPick = vi.fn();
+    render(TimerSheet, {
+      open: true, selected: 'custom', onPick, onStart: () => {}, onClose: () => {}
+    });
+    await fireEvent.click(screen.getByRole('button', { name: /increase by 5/i }));
+    // default is 20, +5 = 25
+    expect(onPick).toHaveBeenCalledWith(25);
+  });
 });

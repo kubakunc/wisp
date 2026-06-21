@@ -10,8 +10,10 @@
   const { sounds, mixes, timer, subscription, analytics } = app;
   const { isPremium } = subscription;
 
-  // Current layers
-  const layers = $derived(sounds.currentLayers());
+  // Current layers — derived from the reactive store value so updates propagate
+  const layers = $derived(
+    Object.entries($sounds).map(([soundId, volume]) => ({ soundId, volume }))
+  );
   const activeCount = $derived(layers.length);
 
   // Single-sound vs multi-sound variant
@@ -52,22 +54,36 @@
   // Timer sheet state
   let sheetOpen = $state(false);
   let sheetSelected = $state<number | 'custom' | 'until' | null>(null);
+  // Track whether the current numeric selection originated from the Custom flow
+  let isCustomFlow = $state(false);
 
   function handleTimerPick(v: number | 'custom' | 'until') {
-    sheetSelected = v;
+    if (v === 'custom') {
+      isCustomFlow = true;
+      sheetSelected = 'custom';
+    } else {
+      // Number from a preset chip clears custom flow; 'until' is its own path
+      if (typeof v === 'number') {
+        isCustomFlow = false;
+      }
+      sheetSelected = v;
+    }
   }
 
   function handleTimerStart() {
     if (sheetSelected === null) return;
     if (sheetSelected === 'until') {
       timer.startUntilStop();
-    } else if (sheetSelected === 'custom') {
-      timer.startCustom(30);
-    } else {
+    } else if (typeof sheetSelected === 'number' && isCustomFlow) {
+      timer.startCustom(sheetSelected);
+    } else if (typeof sheetSelected === 'number') {
       timer.startPreset(sheetSelected);
+    } else {
+      // 'custom' selected but user never chose minutes — nothing to start
+      return;
     }
     analytics.track(WispEvent.timerStart, {
-      mode: typeof sheetSelected === 'number' ? 'preset' : sheetSelected
+      mode: isCustomFlow ? 'custom' : typeof sheetSelected === 'number' ? 'preset' : sheetSelected
     }).catch(() => {});
     sheetOpen = false;
   }
