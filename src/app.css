@@ -13,11 +13,23 @@
   --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
+html, body { margin: 0; min-height: 100%; }
 body {
-  background: linear-gradient(180deg, var(--bg-top), var(--bg-bot)) fixed;
+  /* Solid fallback; the gradient lives on a fixed compositing layer below.
+     NOTE: do NOT use `background-attachment: fixed` here — Android WebView
+     smears it during scroll (ghosted text / bright bands across the page). */
+  background: var(--bg-bot);
   color: var(--text); font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+}
+/* Fixed full-screen gradient backdrop on its own GPU layer (no scroll smear). */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, var(--bg-top), var(--bg-bot));
+  transform: translateZ(0);
 }
 h1, h2, .display { font-family: var(--font-display); letter-spacing: -0.5px; }
 button { font: inherit; color: inherit; cursor: pointer; border: none; background: none; }
