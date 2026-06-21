@@ -1,50 +1,61 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/svelte';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/svelte';
 import BottomNav from './BottomNav.svelte';
 
 describe('BottomNav', () => {
-  it('renders all four tabs', () => {
-    render(BottomNav, { active: 'sounds', onTab: () => {} });
+  it('renders exactly 3 tabs', () => {
+    render(BottomNav, { active: 'sounds' });
     expect(screen.getByText('Sounds')).toBeTruthy();
     expect(screen.getByText('Mixes')).toBeTruthy();
-    expect(screen.getByText('Store')).toBeTruthy();
     expect(screen.getByText('Settings')).toBeTruthy();
+    expect(screen.queryByText('Store')).toBeFalsy();
+  });
+
+  it('renders tabs as anchor links with correct hrefs', () => {
+    render(BottomNav, { active: 'sounds' });
+    const soundsLink = screen.getByText('Sounds').closest('a');
+    const mixesLink = screen.getByText('Mixes').closest('a');
+    const settingsLink = screen.getByText('Settings').closest('a');
+    expect(soundsLink?.getAttribute('href')).toBe('/');
+    expect(mixesLink?.getAttribute('href')).toBe('/mixes');
+    expect(settingsLink?.getAttribute('href')).toBe('/settings');
   });
 
   it('marks active tab with aria-current=page', () => {
-    render(BottomNav, { active: 'mixes', onTab: () => {} });
-    const activeBtn = screen.getByText('Mixes').closest('button');
-    expect(activeBtn?.getAttribute('aria-current')).toBe('page');
+    render(BottomNav, { active: 'mixes' });
+    const activeLink = screen.getByText('Mixes').closest('a');
+    expect(activeLink?.getAttribute('aria-current')).toBe('page');
   });
 
   it('does not set aria-current on inactive tabs', () => {
-    render(BottomNav, { active: 'sounds', onTab: () => {} });
-    const mixesBtn = screen.getByText('Mixes').closest('button');
-    expect(mixesBtn?.getAttribute('aria-current')).toBeNull();
+    render(BottomNav, { active: 'sounds' });
+    const mixesLink = screen.getByText('Mixes').closest('a');
+    expect(mixesLink?.getAttribute('aria-current')).toBeNull();
   });
 
-  it('calls onTab with correct tab id when clicked', async () => {
-    const onTab = vi.fn();
-    render(BottomNav, { active: 'sounds', onTab });
-    await fireEvent.click(screen.getByText('Store').closest('button')!);
-    expect(onTab).toHaveBeenCalledWith('store');
+  it('applies active class to active tab', () => {
+    render(BottomNav, { active: 'settings' });
+    const settingsLink = screen.getByText('Settings').closest('a');
+    expect(settingsLink?.classList.contains('active')).toBe(true);
   });
 
-  it('calls onTab with sounds when Sounds clicked', async () => {
-    const onTab = vi.fn();
-    render(BottomNav, { active: 'mixes', onTab });
-    await fireEvent.click(screen.getByText('Sounds').closest('button')!);
-    expect(onTab).toHaveBeenCalledWith('sounds');
-  });
-
-  it('applies active class to active tab button', () => {
-    render(BottomNav, { active: 'settings', onTab: () => {} });
-    const settingsBtn = screen.getByText('Settings').closest('button');
-    expect(settingsBtn?.classList.contains('active')).toBe(true);
+  it('active tab has color #b6bdf0, inactive has #5b6488', () => {
+    render(BottomNav, { active: 'sounds' });
+    const soundsLink = screen.getByText('Sounds').closest('a');
+    const mixesLink = screen.getByText('Mixes').closest('a');
+    expect(soundsLink?.classList.contains('active')).toBe(true);
+    expect(mixesLink?.classList.contains('active')).toBe(false);
   });
 
   it('renders nav element with label', () => {
-    render(BottomNav, { active: 'sounds', onTab: () => {} });
+    render(BottomNav, { active: 'sounds' });
     expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeTruthy();
+  });
+
+  it('has no onTab prop (pure href links)', () => {
+    // Should render without any callback prop — no 4th tab exists
+    const { container } = render(BottomNav, { active: 'sounds' });
+    const links = container.querySelectorAll('a.nav-item');
+    expect(links.length).toBe(3);
   });
 });

@@ -1,133 +1,196 @@
 <script lang="ts">
-  import type { TimerState, TimerPreset } from '$lib/types';
-
-  let { timerState, onSetPreset, onClear }: {
-    timerState: TimerState;
-    onSetPreset: (minutes: TimerPreset) => void;
-    onClear: () => void;
+  let { open, selected, onPick, onStart, onClose }: {
+    open: boolean;
+    selected: number | 'custom' | 'until' | null;
+    onPick: (v: number | 'custom' | 'until') => void;
+    onStart: () => void;
+    onClose: () => void;
   } = $props();
 
-  const PRESETS: TimerPreset[] = [15, 30, 45, 60, 90];
+  const PRESETS = [15, 30, 45, 60, 90] as const;
 
-  const activePreset = $derived(
-    timerState.mode === 'preset' && timerState.durationSec !== null
-      ? (timerState.durationSec / 60) as TimerPreset
-      : null
+  const ctaLabel = $derived(
+    typeof selected === 'number'
+      ? `Start timer · ${selected} min`
+      : selected === 'until'
+        ? 'Start timer'
+        : 'Start timer'
   );
-
-  const remaining = $derived(() => {
-    if (timerState.endsAt === null) return null;
-    const secs = Math.max(0, Math.round((timerState.endsAt - Date.now()) / 1000));
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  });
 </script>
 
-<div class="timer-sheet" role="dialog" aria-label="Sleep timer">
-  <div class="handle" aria-hidden="true"></div>
+{#if open}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="scrim"
+    onclick={onClose}
+    aria-hidden="true"
+  ></div>
 
-  <h2 class="sheet-title">Sleep Timer</h2>
+  <div class="sheet" role="dialog" aria-label="Sleep timer" aria-modal="true">
+    <div class="handle" aria-hidden="true"></div>
 
-  {#if timerState.endsAt !== null}
-    <p class="countdown" aria-live="polite">{remaining()}</p>
-  {/if}
+    <h2 class="sheet-title">Sleep timer</h2>
+    <p class="explainer">Sound fades out gently over the last 30 seconds — you won't wake to silence cutting off.</p>
 
-  <div class="preset-grid">
-    {#each PRESETS as preset}
+    <div class="preset-grid">
+      {#each PRESETS as preset}
+        <button
+          class="chip"
+          class:chip-selected={selected === preset}
+          aria-pressed={selected === preset}
+          aria-label="{preset} min"
+          onclick={() => onPick(preset)}
+        >
+          {preset}
+        </button>
+      {/each}
       <button
-        class="preset-btn"
-        class:active={activePreset === preset}
-        aria-pressed={activePreset === preset}
-        onclick={() => onSetPreset(preset)}
+        class="chip"
+        class:chip-selected={selected === 'custom'}
+        aria-pressed={selected === 'custom'}
+        aria-label="Custom"
+        onclick={() => onPick('custom')}
       >
-        {preset}m
+        Custom
       </button>
-    {/each}
-  </div>
+    </div>
 
-  {#if timerState.mode !== 'off'}
-    <button class="clear-btn" onclick={onClear}>
-      Cancel Timer
+    <button
+      class="until-row"
+      onclick={() => onPick('until')}
+      aria-pressed={selected === 'until'}
+    >
+      <span class="until-icon" aria-hidden="true">∞</span>
+      Until I stop it
     </button>
-  {/if}
-</div>
+
+    <button
+      class="cta"
+      onclick={onStart}
+    >
+      {ctaLabel}
+    </button>
+  </div>
+{/if}
 
 <style>
-  .timer-sheet {
+  .scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 9, 20, 0.6);
+    z-index: 10;
+  }
+
+  .sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 11;
+    background: linear-gradient(180deg, #161c38, #10142a);
+    border-radius: 32px 32px 0 0;
+    padding: 12px 20px 40px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 20px;
-    padding: 16px 20px 32px;
-    background: var(--surface);
-    border-radius: var(--r-sheet) var(--r-sheet) 0 0;
   }
 
   .handle {
     width: 36px;
     height: 4px;
-    border-radius: var(--r-pill);
+    border-radius: 2px;
     background: rgba(255, 255, 255, 0.15);
     margin-bottom: 4px;
   }
 
   .sheet-title {
+    font-family: var(--font-display);
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--text);
     margin: 0;
   }
 
-  .countdown {
-    font-size: 42px;
-    font-weight: 700;
-    color: var(--accent-1);
+  .explainer {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
     margin: 0;
-    letter-spacing: -0.02em;
+    max-width: 320px;
   }
 
   .preset-grid {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
     width: 100%;
   }
 
-  .preset-btn {
-    flex: 1;
-    min-width: 60px;
-    padding: 12px 8px;
+  .chip {
+    padding: 14px 8px;
     border-radius: var(--r-row);
-    background: var(--surface-hi-b);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     color: var(--text-dim);
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
+    font-family: var(--font-body);
   }
 
-  .preset-btn.active {
-    background: rgba(124, 140, 240, 0.2);
-    border-color: rgba(124, 140, 240, 0.5);
-    color: var(--accent-1);
+  .chip-selected {
+    background: var(--accent-grad);
+    border-color: transparent;
+    color: var(--on-accent);
   }
 
-  .clear-btn {
-    padding: 12px 24px;
-    border-radius: var(--r-pill);
-    background: rgba(255, 255, 255, 0.06);
-    border: none;
-    color: var(--muted);
+  .until-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: var(--r-row);
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: var(--text-dim);
     font-size: 15px;
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.15s;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s;
+    font-family: var(--font-body);
   }
 
-  .clear-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+  .until-row[aria-pressed='true'] {
+    background: rgba(124, 140, 240, 0.15);
+    border-color: rgba(124, 140, 240, 0.4);
+  }
+
+  .until-icon {
+    font-size: 18px;
+    color: var(--muted);
+  }
+
+  .cta {
+    width: 100%;
+    padding: 16px;
+    border-radius: var(--r-pill);
+    background: var(--accent-grad);
+    border: none;
+    color: var(--on-accent);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    font-family: var(--font-body);
+  }
+
+  .cta:hover {
+    opacity: 0.88;
   }
 </style>

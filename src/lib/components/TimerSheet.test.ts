@@ -1,63 +1,108 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
 import TimerSheet from './TimerSheet.svelte';
-import type { TimerState } from '$lib/types';
-
-const offTimer: TimerState = { mode: 'off', durationSec: null, endsAt: null };
-const activeTimer: TimerState = {
-  mode: 'preset',
-  durationSec: 30 * 60,
-  endsAt: Date.now() + 30 * 60 * 1000
-};
 
 describe('TimerSheet', () => {
-  it('renders all 5 preset buttons', () => {
-    render(TimerSheet, { timerState: offTimer, onSetPreset: () => {}, onClear: () => {} });
-    expect(screen.getByRole('button', { name: '15m' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '30m' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '45m' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '60m' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '90m' })).toBeTruthy();
+  it('renders nothing when closed', () => {
+    const { container } = render(TimerSheet, {
+      open: false, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {}
+    });
+    expect(container.textContent?.trim()).toBe('');
   });
 
-  it('calls onSetPreset with correct value', async () => {
-    const onSetPreset = vi.fn();
-    render(TimerSheet, { timerState: offTimer, onSetPreset, onClear: () => {} });
-    await fireEvent.click(screen.getByRole('button', { name: '30m' }));
-    expect(onSetPreset).toHaveBeenCalledWith(30);
+  it('renders the sheet when open', () => {
+    render(TimerSheet, {
+      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {}
+    });
+    expect(screen.getByRole('dialog', { name: 'Sleep timer' })).toBeTruthy();
   });
 
-  it('does not show Cancel Timer when timer is off', () => {
-    render(TimerSheet, { timerState: offTimer, onSetPreset: () => {}, onClear: () => {} });
-    expect(screen.queryByText('Cancel Timer')).toBeFalsy();
+  it('renders all 6 chips: 15/30/45/60/90/Custom', () => {
+    render(TimerSheet, {
+      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {}
+    });
+    expect(screen.getByRole('button', { name: '15 min' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '30 min' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '45 min' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '60 min' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '90 min' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Custom' })).toBeTruthy();
   });
 
-  it('shows Cancel Timer when timer is active', () => {
-    render(TimerSheet, { timerState: activeTimer, onSetPreset: () => {}, onClear: () => {} });
-    expect(screen.getByText('Cancel Timer')).toBeTruthy();
+  it('picks a preset and starts', async () => {
+    const onPick = vi.fn();
+    const onStart = vi.fn();
+    render(TimerSheet, {
+      open: true, selected: 30, onPick, onStart, onClose: () => {}
+    });
+    await fireEvent.click(screen.getByRole('button', { name: '45 min' }));
+    expect(onPick).toHaveBeenCalledWith(45);
+    await fireEvent.click(screen.getByRole('button', { name: /Start timer/ }));
+    expect(onStart).toHaveBeenCalled();
   });
 
-  it('calls onClear when Cancel Timer is clicked', async () => {
-    const onClear = vi.fn();
-    render(TimerSheet, { timerState: activeTimer, onSetPreset: () => {}, onClear });
-    await fireEvent.click(screen.getByText('Cancel Timer'));
-    expect(onClear).toHaveBeenCalledOnce();
+  it('calls onPick with "custom" when Custom chip clicked', async () => {
+    const onPick = vi.fn();
+    render(TimerSheet, {
+      open: true, selected: null, onPick, onStart: () => {}, onClose: () => {}
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Custom' }));
+    expect(onPick).toHaveBeenCalledWith('custom');
+  });
+
+  it('calls onPick with "until" when Until row clicked', async () => {
+    const onPick = vi.fn();
+    render(TimerSheet, {
+      open: true, selected: null, onPick, onStart: () => {}, onClose: () => {}
+    });
+    await fireEvent.click(screen.getByText('Until I stop it'));
+    expect(onPick).toHaveBeenCalledWith('until');
+  });
+
+  it('calls onClose when scrim clicked', async () => {
+    const onClose = vi.fn();
+    const { container } = render(TimerSheet, {
+      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose
+    });
+    const scrim = container.querySelector('.scrim') as HTMLElement;
+    await fireEvent.click(scrim);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('shows explainer text', () => {
+    render(TimerSheet, {
+      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {}
+    });
+    expect(screen.getByText(/Sound fades out gently/)).toBeTruthy();
+  });
+
+  it('selected chip has chip-selected class', () => {
+    const { container } = render(TimerSheet, {
+      open: true, selected: 30, onPick: () => {}, onStart: () => {}, onClose: () => {}
+    });
+    const selectedChip = container.querySelector('.chip-selected');
+    expect(selectedChip).toBeTruthy();
+    expect(selectedChip?.textContent?.trim()).toBe('30');
+  });
+
+  it('CTA shows minutes when a number is selected', () => {
+    render(TimerSheet, {
+      open: true, selected: 45, onPick: () => {}, onStart: () => {}, onClose: () => {}
+    });
+    expect(screen.getByRole('button', { name: 'Start timer · 45 min' })).toBeTruthy();
   });
 
   it('has dialog role', () => {
-    render(TimerSheet, { timerState: offTimer, onSetPreset: () => {}, onClear: () => {} });
+    render(TimerSheet, {
+      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {}
+    });
     expect(screen.getByRole('dialog')).toBeTruthy();
   });
 
   it('shows sleep timer heading', () => {
-    render(TimerSheet, { timerState: offTimer, onSetPreset: () => {}, onClear: () => {} });
-    expect(screen.getByText('Sleep Timer')).toBeTruthy();
-  });
-
-  it('preset button is aria-pressed true for active preset', () => {
-    const timer: TimerState = { mode: 'preset', durationSec: 30 * 60, endsAt: null };
-    render(TimerSheet, { timerState: timer, onSetPreset: () => {}, onClear: () => {} });
-    const btn = screen.getByRole('button', { name: '30m' });
-    expect(btn.getAttribute('aria-pressed')).toBe('true');
+    render(TimerSheet, {
+      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {}
+    });
+    expect(screen.getByText('Sleep timer')).toBeTruthy();
   });
 });

@@ -1,26 +1,22 @@
 <script lang="ts">
-  type Tab = 'sounds' | 'mixes' | 'store' | 'settings';
+  type Tab = 'sounds' | 'mixes' | 'settings';
 
-  let { active, onTab }: {
-    active: Tab;
-    onTab: (tab: Tab) => void;
-  } = $props();
+  let { active }: { active: Tab } = $props();
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'sounds', label: 'Sounds' },
-    { id: 'mixes', label: 'Mixes' },
-    { id: 'store', label: 'Store' },
-    { id: 'settings', label: 'Settings' }
+  const tabs: { id: Tab; label: string; href: string }[] = [
+    { id: 'sounds', label: 'Sounds', href: '/' },
+    { id: 'mixes', label: 'Mixes', href: '/mixes' },
+    { id: 'settings', label: 'Settings', href: '/settings' }
   ];
 </script>
 
 <nav class="bottom-nav" aria-label="Main navigation">
   {#each tabs as tab}
-    <button
+    <a
+      href={tab.href}
       class="nav-item"
       class:active={active === tab.id}
       aria-current={active === tab.id ? 'page' : undefined}
-      onclick={() => onTab(tab.id)}
     >
       {#if tab.id === 'sounds'}
         <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -35,12 +31,6 @@
           <line x1="3" y1="12" x2="8" y2="12"/>
           <line x1="16" y1="12" x2="21" y2="12"/>
         </svg>
-      {:else if tab.id === 'store'}
-        <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-          <line x1="3" y1="6" x2="21" y2="6"/>
-          <path d="M16 10a4 4 0 0 1-8 0"/>
-        </svg>
       {:else}
         <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="8" r="4"/>
@@ -48,7 +38,7 @@
         </svg>
       {/if}
       <span class="nav-label">{tab.label}</span>
-    </button>
+    </a>
   {/each}
 </nav>
 
@@ -69,15 +59,13 @@
     justify-content: center;
     gap: 4px;
     padding: 10px 0 12px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--muted-2);
+    color: #5b6488;
     transition: color 0.15s;
+    text-decoration: none;
   }
 
   .nav-item.active {
-    color: var(--accent-1);
+    color: #b6bdf0;
   }
 
   .nav-label {

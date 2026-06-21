@@ -62,11 +62,47 @@ describe('SoundIcon', () => {
     expect(paths.length).toBe(2);
   });
 
-  it('renders white-noise with fan paths', () => {
+  it('white-noise has a distinct glyph from fan (not the fan path)', () => {
     const { container: c1 } = render(SoundIcon, { id: 'fan' });
     const { container: c2 } = render(SoundIcon, { id: 'white-noise' });
     const d1 = c1.querySelector('path')?.getAttribute('d');
     const d2 = c2.querySelector('path')?.getAttribute('d');
-    expect(d1).toBe(d2);
+    expect(d1).not.toBe(d2);
+  });
+
+  it('noise colors all have distinct paths from each other', () => {
+    const noiseIds = ['white-noise', 'pink-noise', 'brown-noise', 'blue-noise', 'grey-noise'];
+    const firstPaths = noiseIds.map((id) => {
+      const { container } = render(SoundIcon, { id });
+      return container.querySelector('path')?.getAttribute('d');
+    });
+    // All first paths should be unique
+    const unique = new Set(firstPaths);
+    expect(unique.size).toBe(noiseIds.length);
+  });
+
+  it('pink-noise renders 4 paths (its 4-bar pattern)', () => {
+    const { container } = render(SoundIcon, { id: 'pink-noise' });
+    // pink-noise: 'M3 9v6M7 5v14M11 8v8M15 11v2' — single path element
+    const paths = container.querySelectorAll('path');
+    expect(paths.length).toBe(1);
+  });
+
+  it('brown-noise renders its own single path', () => {
+    const { container } = render(SoundIcon, { id: 'brown-noise' });
+    const paths = container.querySelectorAll('path');
+    expect(paths.length).toBe(1);
+  });
+
+  it('blue-noise renders its own single path', () => {
+    const { container } = render(SoundIcon, { id: 'blue-noise' });
+    const paths = container.querySelectorAll('path');
+    expect(paths.length).toBe(1);
+  });
+
+  it('grey-noise renders its own single path', () => {
+    const { container } = render(SoundIcon, { id: 'grey-noise' });
+    const paths = container.querySelectorAll('path');
+    expect(paths.length).toBe(1);
   });
 });

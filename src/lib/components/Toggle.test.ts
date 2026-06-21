@@ -47,4 +47,24 @@ describe('Toggle', () => {
     const { container } = render(Toggle, { on: false, onToggle: () => {} });
     expect(container.querySelector('.toggle.on')).toBeFalsy();
   });
+
+  it('uses default aria-label "Off" when on=false and no ariaLabel', () => {
+    render(Toggle, { on: false, onToggle: () => {} });
+    expect(screen.getByRole('switch').getAttribute('aria-label')).toBe('Off');
+  });
+
+  it('uses default aria-label "On" when on=true and no ariaLabel', () => {
+    render(Toggle, { on: true, onToggle: () => {} });
+    expect(screen.getByRole('switch').getAttribute('aria-label')).toBe('On');
+  });
+
+  it('uses custom ariaLabel prop when provided', () => {
+    render(Toggle, { on: false, ariaLabel: 'Rain sound', onToggle: () => {} });
+    expect(screen.getByRole('switch').getAttribute('aria-label')).toBe('Rain sound');
+  });
+
+  it('custom ariaLabel overrides default On/Off label', () => {
+    render(Toggle, { on: true, ariaLabel: 'Enable notifications', onToggle: () => {} });
+    expect(screen.getByRole('switch').getAttribute('aria-label')).toBe('Enable notifications');
+  });
 });

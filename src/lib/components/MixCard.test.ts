@@ -26,59 +26,69 @@ const bigMix: Mix = {
 
 describe('MixCard', () => {
   it('renders the mix name', () => {
-    render(MixCard, { mix, active: false, onPlay: () => {} });
+    render(MixCard, { mix, playing: false, onPlay: () => {}, onDelete: () => {} });
     expect(screen.getByText('Rain & Ocean')).toBeTruthy();
   });
 
-  it('shows layer count', () => {
-    render(MixCard, { mix, active: false, onPlay: () => {} });
-    expect(screen.getByText('2 sounds')).toBeTruthy();
+  it('shows layer names as subtitle', () => {
+    render(MixCard, { mix, playing: false, onPlay: () => {}, onDelete: () => {} });
+    expect(screen.getByText('Rain, Ocean')).toBeTruthy();
   });
 
-  it('shows singular "1 sound" for single layer', () => {
-    const singleMix: Mix = { id: 'm', name: 'Solo', layers: [{ soundId: 'rain', volume: 1 }] };
-    render(MixCard, { mix: singleMix, active: false, onPlay: () => {} });
-    expect(screen.getByText('1 sound')).toBeTruthy();
-  });
-
-  it('calls onPlay when card body clicked', async () => {
+  it('calls onPlay when play button clicked', async () => {
     const onPlay = vi.fn();
-    render(MixCard, { mix, active: false, onPlay });
-    await fireEvent.click(screen.getByRole('button', { name: /Rain & Ocean/ }));
+    render(MixCard, { mix, playing: false, onPlay, onDelete: () => {} });
+    await fireEvent.click(screen.getByRole('button', { name: /Play Rain & Ocean/ }));
     expect(onPlay).toHaveBeenCalledOnce();
   });
 
-  it('card button is aria-pressed true when active', () => {
-    render(MixCard, { mix, active: true, onPlay: () => {} });
-    const btn = screen.getByRole('button', { name: /Rain & Ocean/ });
+  it('play button is aria-pressed true when playing', () => {
+    render(MixCard, { mix, playing: true, onPlay: () => {}, onDelete: () => {} });
+    const btn = screen.getByRole('button', { name: 'Pause Rain & Ocean' });
     expect(btn.getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('card button is aria-pressed false when inactive', () => {
-    render(MixCard, { mix, active: false, onPlay: () => {} });
-    const btn = screen.getByRole('button', { name: /Rain & Ocean/ });
+  it('play button is aria-pressed false when not playing', () => {
+    render(MixCard, { mix, playing: false, onPlay: () => {}, onDelete: () => {} });
+    const btn = screen.getByRole('button', { name: 'Play Rain & Ocean' });
     expect(btn.getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('renders delete button when onDelete provided', () => {
-    render(MixCard, { mix, active: false, onPlay: () => {}, onDelete: () => {} });
-    expect(screen.getByRole('button', { name: 'Delete Rain & Ocean' })).toBeTruthy();
+  it('shows PLAYING label when playing', () => {
+    render(MixCard, { mix, playing: true, onPlay: () => {}, onDelete: () => {} });
+    expect(screen.getByText('PLAYING')).toBeTruthy();
   });
 
-  it('does not render delete button when onDelete not provided', () => {
-    render(MixCard, { mix, active: false, onPlay: () => {} });
-    expect(screen.queryByRole('button', { name: /Delete/ })).toBeFalsy();
+  it('does not show PLAYING label when not playing', () => {
+    render(MixCard, { mix, playing: false, onPlay: () => {}, onDelete: () => {} });
+    expect(screen.queryByText('PLAYING')).toBeFalsy();
+  });
+
+  it('shows equalizer bars when playing', () => {
+    const { container } = render(MixCard, { mix, playing: true, onPlay: () => {}, onDelete: () => {} });
+    const bars = container.querySelectorAll('.bar');
+    expect(bars.length).toBe(3);
+  });
+
+  it('renders delete button', () => {
+    render(MixCard, { mix, playing: false, onPlay: () => {}, onDelete: () => {} });
+    expect(screen.getByRole('button', { name: 'Delete Rain & Ocean' })).toBeTruthy();
   });
 
   it('calls onDelete when delete button clicked', async () => {
     const onDelete = vi.fn();
-    render(MixCard, { mix, active: false, onPlay: () => {}, onDelete });
+    render(MixCard, { mix, playing: false, onPlay: () => {}, onDelete });
     await fireEvent.click(screen.getByRole('button', { name: 'Delete Rain & Ocean' }));
     expect(onDelete).toHaveBeenCalledOnce();
   });
 
-  it('shows overflow count when more than 3 layers', () => {
-    render(MixCard, { mix: bigMix, active: false, onPlay: () => {} });
-    expect(screen.getByText('+2')).toBeTruthy();
+  it('applies playing class when playing', () => {
+    const { container } = render(MixCard, { mix, playing: true, onPlay: () => {}, onDelete: () => {} });
+    expect(container.querySelector('.mix-card.playing')).toBeTruthy();
+  });
+
+  it('does not apply playing class when not playing', () => {
+    const { container } = render(MixCard, { mix, playing: false, onPlay: () => {}, onDelete: () => {} });
+    expect(container.querySelector('.mix-card.playing')).toBeFalsy();
   });
 });

@@ -1,66 +1,57 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/svelte';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/svelte';
 import PremiumStatusCard from './PremiumStatusCard.svelte';
 
 describe('PremiumStatusCard', () => {
-  it('shows "Free Plan" when not premium', () => {
-    render(PremiumStatusCard, { isPremium: false, onUpgrade: () => {}, onRestore: () => {} });
-    expect(screen.getByText('Free Plan')).toBeTruthy();
+  it('shows "Premium" when premium', () => {
+    render(PremiumStatusCard, { premium: true });
+    expect(screen.getByText('Premium')).toBeTruthy();
   });
 
-  it('shows "Premium Active" when premium', () => {
-    render(PremiumStatusCard, { isPremium: true, onUpgrade: () => {}, onRestore: () => {} });
-    expect(screen.getByText('Premium Active')).toBeTruthy();
+  it('shows "Free — upgrade" when not premium', () => {
+    render(PremiumStatusCard, { premium: false });
+    expect(screen.getByText('Free — upgrade')).toBeTruthy();
   });
 
-  it('shows Upgrade button when not premium', () => {
-    render(PremiumStatusCard, { isPremium: false, onUpgrade: () => {}, onRestore: () => {} });
-    expect(screen.getByRole('button', { name: 'Upgrade' })).toBeTruthy();
+  it('shows premium subtitle when premium', () => {
+    render(PremiumStatusCard, { premium: true });
+    expect(screen.getByText('Enjoy all sounds & features')).toBeTruthy();
   });
 
-  it('does not show Upgrade button when premium', () => {
-    render(PremiumStatusCard, { isPremium: true, onUpgrade: () => {}, onRestore: () => {} });
-    expect(screen.queryByRole('button', { name: 'Upgrade' })).toBeFalsy();
-  });
-
-  it('calls onUpgrade when Upgrade button clicked', async () => {
-    const onUpgrade = vi.fn();
-    render(PremiumStatusCard, { isPremium: false, onUpgrade, onRestore: () => {} });
-    await fireEvent.click(screen.getByRole('button', { name: 'Upgrade' }));
-    expect(onUpgrade).toHaveBeenCalledOnce();
-  });
-
-  it('shows restore button for premium', () => {
-    render(PremiumStatusCard, { isPremium: true, onUpgrade: () => {}, onRestore: () => {} });
-    expect(screen.getByRole('button', { name: 'Restore' })).toBeTruthy();
-  });
-
-  it('shows restore purchase link for free', () => {
-    render(PremiumStatusCard, { isPremium: false, onUpgrade: () => {}, onRestore: () => {} });
-    expect(screen.getByRole('button', { name: 'Restore purchase' })).toBeTruthy();
-  });
-
-  it('calls onRestore when restore button clicked (premium)', async () => {
-    const onRestore = vi.fn();
-    render(PremiumStatusCard, { isPremium: true, onUpgrade: () => {}, onRestore });
-    await fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
-    expect(onRestore).toHaveBeenCalledOnce();
-  });
-
-  it('calls onRestore when restore purchase link clicked (free)', async () => {
-    const onRestore = vi.fn();
-    render(PremiumStatusCard, { isPremium: false, onUpgrade: () => {}, onRestore });
-    await fireEvent.click(screen.getByRole('button', { name: 'Restore purchase' }));
-    expect(onRestore).toHaveBeenCalledOnce();
+  it('shows upgrade subtitle when not premium', () => {
+    render(PremiumStatusCard, { premium: false });
+    expect(screen.getByText('Unlock 30+ premium sounds')).toBeTruthy();
   });
 
   it('applies is-premium class when premium', () => {
-    const { container } = render(PremiumStatusCard, { isPremium: true, onUpgrade: () => {}, onRestore: () => {} });
+    const { container } = render(PremiumStatusCard, { premium: true });
     expect(container.querySelector('.premium-card.is-premium')).toBeTruthy();
   });
 
   it('does not apply is-premium class when not premium', () => {
-    const { container } = render(PremiumStatusCard, { isPremium: false, onUpgrade: () => {}, onRestore: () => {} });
+    const { container } = render(PremiumStatusCard, { premium: false });
     expect(container.querySelector('.premium-card.is-premium')).toBeFalsy();
+  });
+
+  it('renders no action buttons (presentational only)', () => {
+    render(PremiumStatusCard, { premium: true });
+    expect(screen.queryByRole('button')).toBeFalsy();
+  });
+
+  it('renders no action buttons when free either', () => {
+    render(PremiumStatusCard, { premium: false });
+    expect(screen.queryByRole('button')).toBeFalsy();
+  });
+
+  it('renders the WispMark component', () => {
+    const { container } = render(PremiumStatusCard, { premium: true });
+    // WispMark renders a .wisp-mark div
+    expect(container.querySelector('.wisp-mark')).toBeTruthy();
+  });
+
+  it('does not render "Upgrade" or "Restore" buttons (parent owns those)', () => {
+    render(PremiumStatusCard, { premium: false });
+    expect(screen.queryByText(/Upgrade/)).toBeFalsy();
+    expect(screen.queryByText(/Restore/)).toBeFalsy();
   });
 });

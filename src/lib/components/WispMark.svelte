@@ -4,7 +4,7 @@
 
 <div
   class="wisp-mark"
-  style="width:{size}px;height:{size}px;background:{gradient ? 'var(--accent-grad)' : 'var(--accent-1)'}"
+  style="width:{size}px;height:{size}px;border-radius:{size * 0.3}px;background:{gradient ? 'var(--accent-grad)' : 'var(--accent-1)'}"
   aria-hidden="true"
 >
   <svg
@@ -24,7 +24,6 @@
 
 <style>
   .wisp-mark {
-    border-radius: 13px;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -1,9 +1,12 @@
 <script lang="ts">
-  let { on, disabled = false, onToggle }: {
+  let { on, disabled = false, ariaLabel, onToggle }: {
     on: boolean;
     disabled?: boolean;
+    ariaLabel?: string;
     onToggle: () => void;
   } = $props();
+
+  const label = $derived(ariaLabel ?? (on ? 'On' : 'Off'));
 </script>
 
 <button
@@ -11,7 +14,7 @@
   class:on
   role="switch"
   aria-checked={on}
-  aria-label={on ? 'On' : 'Off'}
+  aria-label={label}
   {disabled}
   onclick={() => { if (!disabled) onToggle(); }}
 >
@@ -25,7 +28,7 @@
     height: 26px;
     border-radius: var(--r-pill);
     border: none;
-    background: #262b46;
+    background: var(--track);
     cursor: pointer;
     padding: 0;
     flex-shrink: 0;

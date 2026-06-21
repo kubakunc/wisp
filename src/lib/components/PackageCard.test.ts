@@ -6,72 +6,83 @@ import type { PackageLite } from '$lib/adapters/purchases';
 const annualPkg: PackageLite = {
   identifier: '$rc_annual',
   productId: 'wisp.premium.annual',
-  priceString: '$29.99',
+  priceString: '$39.99',
   packageType: 'ANNUAL'
 };
 
 const monthlyPkg: PackageLite = {
   identifier: '$rc_monthly',
   productId: 'wisp.premium.monthly',
-  priceString: '$4.99',
+  priceString: '$6.99',
   packageType: 'MONTHLY'
 };
 
 describe('PackageCard', () => {
   it('renders Annual label for annual package', () => {
-    render(PackageCard, { pkg: annualPkg, selected: false, onSelect: () => {} });
+    render(PackageCard, { pkg: annualPkg, featured: false, onSelect: () => {} });
     expect(screen.getByText('Annual')).toBeTruthy();
   });
 
   it('renders Monthly label for monthly package', () => {
-    render(PackageCard, { pkg: monthlyPkg, selected: false, onSelect: () => {} });
+    render(PackageCard, { pkg: monthlyPkg, featured: false, onSelect: () => {} });
     expect(screen.getByText('Monthly')).toBeTruthy();
   });
 
   it('shows price string', () => {
-    render(PackageCard, { pkg: annualPkg, selected: false, onSelect: () => {} });
-    expect(screen.getByText('$29.99')).toBeTruthy();
+    render(PackageCard, { pkg: annualPkg, featured: false, onSelect: () => {} });
+    expect(screen.getByText('$39.99')).toBeTruthy();
   });
 
-  it('shows "Best Value" badge for annual', () => {
-    render(PackageCard, { pkg: annualPkg, selected: false, onSelect: () => {} });
-    expect(screen.getByText('Best Value')).toBeTruthy();
+  it('shows "BEST VALUE · SAVE 60%" badge for featured annual', () => {
+    render(PackageCard, { pkg: annualPkg, featured: true, onSelect: () => {} });
+    expect(screen.getByText('BEST VALUE · SAVE 60%')).toBeTruthy();
   });
 
-  it('does not show "Best Value" badge for monthly', () => {
-    render(PackageCard, { pkg: monthlyPkg, selected: false, onSelect: () => {} });
-    expect(screen.queryByText('Best Value')).toBeFalsy();
+  it('does not show badge for non-featured annual', () => {
+    render(PackageCard, { pkg: annualPkg, featured: false, onSelect: () => {} });
+    expect(screen.queryByText('BEST VALUE · SAVE 60%')).toBeFalsy();
   });
 
-  it('has aria-pressed true when selected', () => {
-    render(PackageCard, { pkg: annualPkg, selected: true, onSelect: () => {} });
-    expect(screen.getByRole('button').getAttribute('aria-pressed')).toBe('true');
+  it('does not show badge for monthly even if featured', () => {
+    render(PackageCard, { pkg: monthlyPkg, featured: true, onSelect: () => {} });
+    expect(screen.queryByText('BEST VALUE · SAVE 60%')).toBeFalsy();
   });
 
-  it('has aria-pressed false when not selected', () => {
-    render(PackageCard, { pkg: monthlyPkg, selected: false, onSelect: () => {} });
-    expect(screen.getByRole('button').getAttribute('aria-pressed')).toBe('false');
+  it('shows "7-day free trial" for featured annual', () => {
+    render(PackageCard, { pkg: annualPkg, featured: true, onSelect: () => {} });
+    expect(screen.getByText('7-day free trial')).toBeTruthy();
+  });
+
+  it('shows per-month derived label for annual package', () => {
+    render(PackageCard, { pkg: annualPkg, featured: true, onSelect: () => {} });
+    // $39.99/12 ≈ $3.33/month
+    expect(screen.getByText(/\$3\.33\/month/)).toBeTruthy();
+  });
+
+  it('does not show per-month label for monthly package', () => {
+    render(PackageCard, { pkg: monthlyPkg, featured: false, onSelect: () => {} });
+    expect(screen.queryByText(/\/month/)).toBeFalsy();
   });
 
   it('calls onSelect when clicked', async () => {
     const onSelect = vi.fn();
-    render(PackageCard, { pkg: monthlyPkg, selected: false, onSelect });
+    render(PackageCard, { pkg: monthlyPkg, featured: false, onSelect });
     await fireEvent.click(screen.getByRole('button'));
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
-  it('shows per-year billing note for annual', () => {
-    render(PackageCard, { pkg: annualPkg, selected: false, onSelect: () => {} });
-    expect(screen.getByText('Billed once a year')).toBeTruthy();
+  it('applies featured class when featured', () => {
+    const { container } = render(PackageCard, { pkg: annualPkg, featured: true, onSelect: () => {} });
+    expect(container.querySelector('.package-card.featured')).toBeTruthy();
   });
 
-  it('shows monthly billing note for monthly', () => {
-    render(PackageCard, { pkg: monthlyPkg, selected: false, onSelect: () => {} });
-    expect(screen.getByText('Billed monthly, cancel anytime')).toBeTruthy();
+  it('does not apply featured class when not featured', () => {
+    const { container } = render(PackageCard, { pkg: annualPkg, featured: false, onSelect: () => {} });
+    expect(container.querySelector('.package-card.featured')).toBeFalsy();
   });
 
-  it('applies selected class when selected', () => {
-    const { container } = render(PackageCard, { pkg: annualPkg, selected: true, onSelect: () => {} });
-    expect(container.querySelector('.package-card.selected')).toBeTruthy();
+  it('shows "Cancel anytime" for monthly', () => {
+    render(PackageCard, { pkg: monthlyPkg, featured: false, onSelect: () => {} });
+    expect(screen.getByText('Cancel anytime')).toBeTruthy();
   });
 });
