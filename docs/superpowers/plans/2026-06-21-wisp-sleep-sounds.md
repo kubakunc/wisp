@@ -22,10 +22,12 @@
 - **Design fidelity:** all UI matches `docs/design/DESIGN.md` (tokens, component states) and `docs/design/Wisp.app.reference.html`. Fonts **Sora** (display) + **Plus Jakarta Sans** (body) are bundled locally for offline use with a system fallback — never load fonts from a CDN at runtime.
 - **Mixer:** orbit layout (nodes around a central play/timer orb) with **tap-to-select + slider** — no drag.
 - Marketing deliverables: Play Store asset set (icon/feature graphic/screenshots) **and** a standalone marketing landing page, derived from `Wisp Marketing.dc.html` (design project `99bbc0e9-ff96-4427-a650-4aec3b8b6245`).
+- **Analytics:** Firebase Analytics behind the adapter seam; track screen views + key events. Offline-safe; never blocks the UI.
+- **Ads:** AdMob banner anchored directly **above the bottom nav**, shown to **free users only** (removed for premium), and only after the **UMP consent** flow. Test ad unit ids as placeholders. Never gate audio — only the banner UI.
 
 ### Execution order
 Task numbers are not strictly sequential for execution. Dispatch order (dependencies):
-`2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 17 (theme/fonts) → 12 (components) → 13 (screens) → 14 (E2E) → 15 (Capacitor) → 18 (store assets) → 20 (Android icon) → 19 (marketing page) → 16 (README + final verify)`. (Task 1 is already complete.)
+`2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 17 (theme/fonts) → 21 (Firebase analytics) → 22 (AdMob ads) → 12 (components) → 13 (screens) → 14 (E2E) → 15 (Capacitor) → 18 (store assets) → 20 (Android icon) → 19 (marketing page) → 16 (README + final verify)`. (Tasks 1–11 are already complete.)
 
 ---
 
@@ -2037,6 +2039,8 @@ git commit -m "feat: design-accurate UI components (sound row, orbit mixer, time
 - Consumes: `app` + `RC_API_KEY` (Task 11), components (Task 12), `SOUNDS`/`getSound` (Task 2).
 
 - [ ] **Step 1: `+layout.svelte`** — global dark background + safe-area padding; initializes RevenueCat on mount (`subscription.init(RC_API_KEY)`); refreshes entitlement on Capacitor `App` `resume`; clears `sounds` when the timer resets to `off` after firing (the `$effect` from the original Task 13 design); renders `{@render children()}` and a `BottomNav` whose active tab is derived from `$page.url.pathname`. The `now-playing` and `paywall` routes hide the bottom nav (full-screen). Loads the bundled fonts via the theme set up in the theme task.
+  - **Analytics:** on navigation, call `app.analytics.screen(<routeName>)` (Task 21); fire `app.analytics.track(...)` from the key actions in Steps 2–6 (sound_play on toggle-on, mix_save on save, mix_play on applyMix, timer_start on Start timer, paywall_view on paywall mount, purchase/restore on those actions) — fire-and-forget with `.catch(()=>{})` so analytics never blocks UI.
+  - **AdMob banner (Task 22):** on mount call `app.ads.init()` (runs UMP consent); then `app.ads.sync($isPremium)` on mount and whenever `$isPremium` changes (an `$effect`) — shows the banner for free users, removes it for premium. The banner is a native overlay anchored at `BOTTOM_CENTER` with `margin = bottom-nav height` so it sits directly **above** the nav; reserve layout space by adding bottom padding to the scrollable content = `nav height + BANNER_HEIGHT_PX` for free users (no extra banner padding for premium). The bottom nav stays fixed above the banner. The `now-playing`/`paywall` full-screen routes hide nav and the banner.
 
 - [ ] **Step 2: Home `/`** — header eyebrow + Sora "Sounds" + search button; **hero favorite-mix card** (plays the first saved mix, or a sensible default mix if none; tapping → applyMix + navigate to `/now-playing`); the sound list rendered from `SOUNDS` as `SoundRow`s with active sounds (keys of `$sounds`) floated to the top, `locked = sound.tier==='premium' && !$isPremium` (locked tap → `/paywall`, else `sounds.toggle`); the `NowPlayingBar` (count = active count, opens `/now-playing`).
 
@@ -2072,7 +2076,9 @@ git commit -m "feat: design-accurate screens (home, orbit now-playing, mixes, pa
 Replace `export const app = createApp();` with:
 
 ```ts
-type TestHook = { audio?: NativeAudioAdapter; purchases?: PurchasesAdapter; preferences?: PreferencesAdapter };
+// TestHook mirrors AppDeps — include EVERY adapter createApp accepts (audio, purchases,
+// preferences, analytics, admob) so the browser build never touches a real native plugin.
+type TestHook = AppDeps;
 const testDeps: TestHook =
   typeof window !== 'undefined' && (window as unknown as { __WISP_TEST__?: TestHook }).__WISP_TEST__
     ? (window as unknown as { __WISP_TEST__: TestHook }).__WISP_TEST__
@@ -2115,6 +2121,15 @@ test.beforeEach(async ({ page }) => {
         ] }; },
         async purchasePackage() { return { entitlements: ['premium'] }; },
         async restorePurchases() { return { entitlements: [] }; }
+      },
+      // analytics + admob fakes — required because the layout calls app.analytics.* and app.ads.*
+      analytics: {
+        async logEvent() {}, async setScreen() {}, async setEnabled() {}
+      },
+      admob: {
+        async initialize() {},
+        async requestConsent() { return 'not_required'; },
+        async showBanner() {}, async hideBanner() {}, async removeBanner() {}
       }
     };
   });
@@ -2222,16 +2237,26 @@ Inside `<application>` declare the plugin service:
     android:exported="false" />
 ```
 
-- [ ] **Step 5: Sync**
+Also inside `<application>`, add the **AdMob app id** meta-data (use Google's sample app id as a placeholder until a real one is issued; document the swap):
+
+```xml
+<meta-data
+    android:name="com.google.android.gms.ads.APPLICATION_ID"
+    android:value="ca-app-pub-3940256099942544~3347511713" />
+```
+
+- [ ] **Step 5: Firebase config** — place the developer's `google-services.json` at `android/app/google-services.json` (commit a documented placeholder + README note that a real file from the Firebase console is required for analytics to report). Apply the Google Services Gradle plugin: add `classpath 'com.google.gms:google-services:4.4.2'` to `android/build.gradle` and `apply plugin: 'com.google.gms.google-services'` at the bottom of `android/app/build.gradle` (per `@capacitor-firebase/analytics` setup docs — verify against the installed plugin's README).
+
+- [ ] **Step 6: Sync**
 
 Run: `npx cap sync android`
-Expected: sync completes; manifest changes preserved.
+Expected: sync completes; manifest + gradle changes preserved.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add -A
-git commit -m "chore: add Capacitor config + Android manifest (foreground service, permissions, launchMode)"
+git commit -m "chore: Capacitor config + Android manifest (foreground service, permissions, launchMode, AdMob app id, Firebase gradle)"
 ```
 
 ---
@@ -2247,13 +2272,15 @@ git commit -m "chore: add Capacitor config + Android manifest (foreground servic
 
 Include sections (full prose, not placeholders):
 - **What is Wisp** — one paragraph.
-- **Prerequisites** — Node 20+, Android Studio, JDK 17, a physical Android device.
+- **Prerequisites** — Node 20+ for the web/test toolchain; **Node 22+ required for the Capacitor 8 CLI / Android build** (`cap` commands warn/refuse on Node 20). Android Studio, JDK 17, a physical Android device.
 - **Install & run (web/dev):** `npm install`, `npm run dev`.
 - **Tests:** `npm test` (unit + coverage ≥90%), `npm run test:e2e` (Playwright).
 - **Build the Android app:** `npm run cap:sync`, then `npx cap open android` → run on device.
 - **Where to drop sound files:** put seamless-loop `*.mp3` named exactly per `src/lib/sounds/registry.ts` (e.g. `rain.mp3`) into the Android assets path so they resolve at `sounds/<id>.mp3`; document the public assets folder the plugin reads from. Note noise colors must be pre-rendered offline; nature sounds CC0/royalty-free, loudness-normalized, loop-verified, 128–192 kbps.
 - **RevenueCat setup checklist:** create project, add the Google Play app, create entitlement `premium`, create products `wisp_premium_annual` (with 7-day trial) and `wisp_premium_monthly`, one offering with both packages, copy the public SDK key into `.env` as `VITE_RC_API_KEY`.
-- **Play Console checklist:** create app, internal testing track, set up billing products matching the RevenueCat product ids, complete Data Safety form, add privacy policy URL.
+- **Play Console checklist:** create app, internal testing track, set up billing products matching the RevenueCat product ids, complete Data Safety form (declare analytics + ads data collection), add privacy policy URL.
+- **Firebase analytics setup:** create a Firebase project, add the Android app (package `com.velologiclabs.wisp`), download `google-services.json` into `android/app/`, confirm the Google Services Gradle plugin is applied. Without a real `google-services.json` analytics simply no-ops; the app still runs.
+- **AdMob setup:** create an AdMob account + app, replace the placeholder app id in `AndroidManifest.xml` (`com.google.android.gms.ads.APPLICATION_ID`) and the test banner unit id in `src/lib/ads/config.ts` with real ids before release. The **UMP consent** flow runs on first launch; ads show for free users only and are removed for premium. Keep using the Google test ids during development (real ids + real impressions only in production builds).
 - **IMPORTANT — physical device for IAP:** in-app purchases and true background-with-screen-off playback must be tested on a physical device; emulators are unreliable for billing.
 - **Battery optimization hint:** instruct users on Xiaomi/Samsung to disable battery optimization for Wisp if audio stops with the screen off.
 
@@ -2454,6 +2481,144 @@ git add -A && git commit -m "feat: marketing landing page"
 ```bash
 git add -A && git commit -m "chore(android): wire Wisp adaptive launcher icon"
 ```
+---
+
+### Task 21: Firebase Analytics (metrics) — adapter + service + wiring
+
+Adds privacy-respecting product analytics via Firebase Analytics, behind the adapter seam (consistent with Task 3). Build BEFORE Task 13 (screens fire events).
+
+**Files:**
+- Create: `src/lib/adapters/analytics.ts` (interface `AnalyticsAdapter` + real impl over `@capacitor-firebase/analytics`), `src/lib/adapters/fakes/fakeAnalytics.ts`
+- Create: `src/lib/services/analyticsService.ts` (typed event API), `src/lib/analytics/events.ts` (event-name constants)
+- Modify: `src/lib/app.ts` (wire `analytics` into `createApp` + `AppDeps`), `vite.config.ts` (exclude the real analytics adapter from coverage)
+- Modify: `package.json` (add `@capacitor-firebase/analytics@^8.3.0` and `@capacitor-firebase/app@^8.3.0` — Capacitor-8 compatible; clean `npm install`)
+- Test: `src/lib/adapters/fakes/fakeAnalytics.test.ts`, `src/lib/services/analyticsService.test.ts`
+
+**Interfaces:**
+- `interface AnalyticsAdapter { logEvent(name: string, params?: Record<string, string | number | boolean>): Promise<void>; setScreen(name: string): Promise<void>; setEnabled(enabled: boolean): Promise<void>; }`
+- Real `analyticsAdapter` wraps `FirebaseAnalytics.logEvent({ name, params })`, `FirebaseAnalytics.setCurrentScreen({ screenName })`, `FirebaseAnalytics.setEnabled({ enabled })` (verify exact method/param names against the installed `node_modules/@capacitor-firebase/analytics` `.d.ts`; installed API wins over this sketch).
+- `events.ts`: `export const WispEvent = { soundPlay:'sound_play', soundStop:'sound_stop', mixSave:'mix_save', mixPlay:'mix_play', timerStart:'timer_start', paywallView:'paywall_view', purchase:'purchase', restore:'restore' } as const; export type WispEventName = typeof WispEvent[keyof typeof WispEvent];`
+- `createAnalyticsService(adapter: AnalyticsAdapter)` → `{ screen(name: string): Promise<void>; track(event: WispEventName, params?: Record<string, string | number | boolean>): Promise<void>; setEnabled(enabled: boolean): Promise<void>; }`
+- `createFakeAnalytics()` → `{ adapter: AnalyticsAdapter; state: { events: { name: string; params?: Record<string, unknown> }[]; screens: string[]; enabled: boolean } }`
+
+- [ ] **Step 1: add deps** — edit `package.json` to add `@capacitor-firebase/analytics` `^8.3.0` and `@capacitor-firebase/app` `^8.3.0`; run `npm install` (must be clean, no `--legacy-peer-deps`; they peer-require `@capacitor/core >=8` which we have). Confirm `npx vitest run src/lib/smoke.test.ts` still passes.
+
+- [ ] **Step 2: write failing tests** for the fake + service. Examples:
+
+```ts
+// fakeAnalytics.test.ts
+import { describe, it, expect } from 'vitest';
+import { createFakeAnalytics } from './fakeAnalytics';
+describe('fakeAnalytics', () => {
+  it('records events, screens, enabled', async () => {
+    const { adapter, state } = createFakeAnalytics();
+    await adapter.setScreen('Home');
+    await adapter.logEvent('sound_play', { soundId: 'rain' });
+    await adapter.setEnabled(false);
+    expect(state.screens).toEqual(['Home']);
+    expect(state.events).toEqual([{ name: 'sound_play', params: { soundId: 'rain' } }]);
+    expect(state.enabled).toBe(false);
+  });
+});
+```
+
+```ts
+// analyticsService.test.ts
+import { describe, it, expect } from 'vitest';
+import { createAnalyticsService } from './analyticsService';
+import { createFakeAnalytics } from '$lib/adapters/fakes/fakeAnalytics';
+import { WispEvent } from '$lib/analytics/events';
+describe('analyticsService', () => {
+  it('tracks a typed event with params', async () => {
+    const { adapter, state } = createFakeAnalytics();
+    const svc = createAnalyticsService(adapter);
+    await svc.track(WispEvent.mixSave, { layers: 2 });
+    expect(state.events).toEqual([{ name: 'mix_save', params: { layers: 2 } }]);
+  });
+  it('logs a screen view', async () => {
+    const { adapter, state } = createFakeAnalytics();
+    const svc = createAnalyticsService(adapter);
+    await svc.screen('Paywall');
+    expect(state.screens).toEqual(['Paywall']);
+  });
+});
+```
+
+- [ ] **Step 3: run tests, watch fail.**
+- [ ] **Step 4: implement** `events.ts`, `analytics.ts` (interface + real adapter against the installed `.d.ts`), `fakeAnalytics.ts`, `analyticsService.ts`. Strict TS, no `any`; analytics calls never throw into the UI (the SERVICE must not swallow silently in a way that hides bugs in tests — but at the call sites in the UI, fire-and-forget with a `.catch` that is acceptable; keep the service itself a thin pass-through that surfaces errors, and let callers decide). Keep the service pure pass-through (no try/catch swallowing) so tests see real behavior.
+- [ ] **Step 5: wire into `app.ts`** — add `analytics?: AnalyticsAdapter` to `AppDeps`, default `analyticsAdapter`, construct `const analytics = createAnalyticsService(...)`, return it in the app object. Exclude `src/lib/adapters/analytics.ts` from coverage in `vite.config.ts` (native wrapper). Update `app.test.ts` if needed to inject `createFakeAnalytics().adapter`.
+- [ ] **Step 6: verify** `npm test` (≥90% gate green) + `npm run check` clean. Commit:
+
+```bash
+git add -A && git commit -m "feat: Firebase analytics adapter + service, wired into app"
+```
+
+---
+
+### Task 22: AdMob banner (free-tier) with UMP consent — adapter + service + store
+
+Adds an AdMob banner anchored ABOVE the bottom nav, shown to FREE users only, after the UMP consent flow. Behind the adapter seam. Build BEFORE Task 13 (layout shows the banner). Uses Google TEST ad unit ids as placeholders.
+
+**Files:**
+- Create: `src/lib/adapters/admob.ts` (interface `AdMobAdapter` + real impl over `@capacitor-community/admob`), `src/lib/adapters/fakes/fakeAdMob.ts`
+- Create: `src/lib/services/adsService.ts`, `src/lib/stores/ads.ts`, `src/lib/ads/config.ts` (test ad unit ids + banner height constant)
+- Modify: `src/lib/app.ts` (wire `ads` store into `createApp` + `AppDeps`), `vite.config.ts` (exclude real admob adapter from coverage)
+- Modify: `package.json` (add `@capacitor-community/admob@^8.0.0`; clean install)
+- Test: `src/lib/adapters/fakes/fakeAdMob.test.ts`, `src/lib/services/adsService.test.ts`, `src/lib/stores/ads.test.ts`
+
+**Interfaces:**
+- `interface AdMobAdapter { initialize(): Promise<void>; requestConsent(): Promise<'obtained' | 'not_required' | 'unavailable'>; showBanner(opts: { adId: string; marginBottomPx: number }): Promise<void>; hideBanner(): Promise<void>; removeBanner(): Promise<void>; }`
+- Real `admobAdapter` wraps `AdMob.initialize()`, the UMP consent flow (`AdMob.requestConsentInfo()` + `AdMob.showConsentForm()` as required by the installed API — verify against `node_modules/@capacitor-community/admob` `.d.ts`; installed API wins), `AdMob.showBanner({ adId, position: BannerAdPosition.BOTTOM_CENTER, margin: marginBottomPx, adSize: BannerAdSize.ADAPTIVE_BANNER })`, `hideBanner`, `removeBanner`.
+- `config.ts`: `export const TEST_BANNER_AD_ID = 'ca-app-pub-3940256099942544/6300978111'; // Google test banner; replace before release` and `export const BANNER_HEIGHT_PX = 56;` (documented to swap real ids).
+- `createAdsService(adapter: AdMobAdapter, opts?: { adId?: string; marginBottomPx?: number })` → `{ init(): Promise<'obtained'|'not_required'|'unavailable'>; showIfEligible(isPremium: boolean): Promise<void>; hide(): Promise<void>; remove(): Promise<void>; }` where `init` initializes + runs consent and records the result; `showIfEligible` shows the banner ONLY when `!isPremium` AND consent is obtained/not_required (premium or no-consent → ensure banner removed). 
+- `createAdsStore(svc)` → Svelte store value `{ consent: 'unknown'|'obtained'|'not_required'|'unavailable'; bannerVisible: boolean }`, with `{ subscribe, init(), sync(isPremium): Promise<void>, hide() }`. `sync(isPremium)` calls `svc.showIfEligible(isPremium)` and updates `bannerVisible`.
+- `createFakeAdMob(opts?: { consent?: 'obtained'|'not_required'|'unavailable' })` → `{ adapter; state: { initialized: boolean; consentRequested: boolean; bannerShown: boolean; lastMargin: number | null } }`.
+
+- [ ] **Step 1: add dep** — add `@capacitor-community/admob` `^8.0.0` to `package.json`, `npm install` (clean), confirm smoke test passes.
+- [ ] **Step 2: write failing tests** for fake + service + store. Key assertions:
+  - fake records initialize/requestConsent/showBanner(margin)/hide/remove.
+  - service: `showIfEligible(false)` with consent obtained → `state.bannerShown === true`, margin === BANNER offset; `showIfEligible(true)` (premium) → banner removed/not shown; `showIfEligible(false)` with consent 'unavailable' → not shown.
+  - store: `init()` records consent; `sync(false)` → `bannerVisible true` (consent ok); `sync(true)` → `bannerVisible false`.
+
+```ts
+// adsService.test.ts (representative)
+import { describe, it, expect } from 'vitest';
+import { createAdsService } from './adsService';
+import { createFakeAdMob } from '$lib/adapters/fakes/fakeAdMob';
+describe('adsService', () => {
+  it('shows a banner for free users once consent is obtained', async () => {
+    const { adapter, state } = createFakeAdMob({ consent: 'obtained' });
+    const svc = createAdsService(adapter);
+    await svc.init();
+    await svc.showIfEligible(false);
+    expect(state.bannerShown).toBe(true);
+  });
+  it('never shows a banner for premium users', async () => {
+    const { adapter, state } = createFakeAdMob({ consent: 'obtained' });
+    const svc = createAdsService(adapter);
+    await svc.init();
+    await svc.showIfEligible(true);
+    expect(state.bannerShown).toBe(false);
+  });
+  it('does not show when consent is unavailable', async () => {
+    const { adapter, state } = createFakeAdMob({ consent: 'unavailable' });
+    const svc = createAdsService(adapter);
+    await svc.init();
+    await svc.showIfEligible(false);
+    expect(state.bannerShown).toBe(false);
+  });
+});
+```
+
+- [ ] **Step 3: run tests, watch fail.**
+- [ ] **Step 4: implement** config, adapter (interface + real impl against installed `.d.ts`), fake, service, store. Strict TS no `any`. The consent gating + premium gating logic lives in the SERVICE and is fully unit-tested via the fake. Never gate audio — only the banner UI.
+- [ ] **Step 5: wire into `app.ts`** — add `admob?: AdMobAdapter` to `AppDeps` (default `admobAdapter`), construct `const ads = createAdsStore(createAdsService(admob))`, return `ads`. Exclude `src/lib/adapters/admob.ts` from coverage. Inject `createFakeAdMob().adapter` in `app.test.ts` where needed.
+- [ ] **Step 6: verify** `npm test` (≥90% green) + `npm run check` clean. Commit:
+
+```bash
+git add -A && git commit -m "feat: AdMob banner service + store (free-tier, UMP consent), wired into app"
+```
+
 ## Self-Review
 
 **Spec coverage:**
@@ -2471,6 +2636,8 @@ git add -A && git commit -m "chore(android): wire Wisp adaptive launcher icon"
 - **Offline fonts** (Sora + Plus Jakarta Sans, no CDN) → Task 17. ✓
 - **Marketing — store assets** (app icon set, feature graphic, screenshots) → Task 18; **Android launcher icon** → Task 20. ✓
 - **Marketing — landing page** → Task 19. ✓
+- **Firebase analytics** (adapter+service+events, wired into app, fired from screens) → Task 21 (+ Task 13 call sites, Task 15 gradle/google-services). ✓
+- **AdMob banner** (free-tier only, above bottom nav, UMP consent) → Task 22 (+ Task 13 layout, Task 15 manifest app id). ✓
 
 **Coverage thresholds note:** the 90% gate applies to `src/lib/**` (logic, stores, services, components). `.svelte` route files under `src/routes/**` are excluded from the unit-coverage `include` and are exercised by the Playwright E2E suite (Task 14) instead — route files are thin store/component glue, so their behavior is covered end-to-end rather than via jsdom unit tests.
 
