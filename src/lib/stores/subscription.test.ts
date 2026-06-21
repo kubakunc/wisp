@@ -38,6 +38,14 @@ describe('subscription store', () => {
     expect(get(store.isPremium)).toBe(true);
   });
 
+  it('restore updates premium when entitlement is active', async () => {
+    const { store, setPremium } = makeStore(false);
+    await store.init('key');
+    setPremium(true);
+    await store.restore();
+    expect(get(store.isPremium)).toBe(true);
+  });
+
   it('lists packages through the store', async () => {
     const { store } = makeStore();
     const pkgs = await store.listPackages();
