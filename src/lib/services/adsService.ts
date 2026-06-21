@@ -1,5 +1,5 @@
 import type { AdMobAdapter, ConsentResult } from '$lib/adapters/admob';
-import { TEST_BANNER_AD_ID, BANNER_HEIGHT_PX } from '$lib/ads/config';
+import { TEST_BANNER_AD_ID } from '$lib/ads/config';
 
 export interface AdsServiceOpts {
   adId?: string;
@@ -8,7 +8,9 @@ export interface AdsServiceOpts {
 
 export function createAdsService(adapter: AdMobAdapter, opts?: AdsServiceOpts) {
   const adId = opts?.adId ?? TEST_BANNER_AD_ID;
-  const marginBottomPx = opts?.marginBottomPx ?? BANNER_HEIGHT_PX;
+  // Banner anchors to the bottom edge (margin 0). On Android 15+ the plugin forces
+  // this regardless; the web layout lifts the bottom nav above the banner.
+  const marginBottomPx = opts?.marginBottomPx ?? 0;
 
   let lastConsent: ConsentResult | null = null;
 

@@ -9,7 +9,8 @@ test.beforeEach(async ({ page }) => {
         async preload(o: any) { tracks.set(o.audioId, { playing: false, volume: 1 }); },
         async play(id: string) { const t = tracks.get(id); if (t) t.playing = true; },
         async pause(id: string) { const t = tracks.get(id); if (t) t.playing = false; },
-        async stop(id: string) { tracks.delete(id); },
+        async stop(id: string) { const t = tracks.get(id); if (t) t.playing = false; },
+        async destroy(id: string) { tracks.delete(id); },
         async setVolume(id: string, v: number) { const t = tracks.get(id); if (t) t.volume = v; }
       },
       preferences: {

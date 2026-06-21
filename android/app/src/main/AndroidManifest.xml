@@ -34,11 +34,17 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
-        <!-- @mediagrid/capacitor-native-audio background playback service -->
+        <!-- @mediagrid/capacitor-native-audio background playback service.
+             MUST be a media3 MediaSessionService: the intent-filter is required
+             or the plugin can't resolve a SessionToken (audio fails to create). -->
         <service
             android:name="us.mediagrid.capacitorjs.plugins.nativeaudio.AudioPlayerService"
             android:foregroundServiceType="mediaPlayback"
-            android:exported="false" />
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
 
         <!-- AdMob app id (Google sample/test id — replace with the real one before release) -->
         <meta-data

@@ -4,70 +4,80 @@ import { getSound } from '$lib/sounds/registry';
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 const realSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+/**
+ * Wraps the native-audio plugin into a simple multi-source mixer.
+ *
+ * Notification-owner model (dictated by @mediagrid/capacitor-native-audio):
+ * exactly one source may have useForNotification=true, it must be CREATED first,
+ * and it must be DESTROYED last (you cannot destroy it while other sources exist,
+ * and there is no API to transfer ownership). So the first sound played becomes a
+ * stable "anchor" for the whole session: if the user toggles it off while other
+ * sounds play we PAUSE it (keep it as the silent notification anchor) rather than
+ * destroy it; once the mix is empty we tear everything down, owner last.
+ */
 export function createAudioEngine(audio: NativeAudioAdapter) {
-  const preloaded = new Set<string>();
-  const active = new Map<string, number>(); // soundId -> volume
-  let notificationOwnerId: string | null = null;
+  const created = new Set<string>(); // sources that exist in the plugin
+  const active = new Map<string, number>(); // soundId -> volume (the audible mix)
+  let ownerId: string | null = null;
 
-  async function preloadTrack(soundId: string, useForNotification: boolean): Promise<void> {
-    const def = getSound(soundId);
-    if (!def) throw new Error(`Unknown sound: ${soundId}`);
-    await audio.preload({
-      audioId: def.id,
-      assetPath: def.assetPath,
-      loop: true,
-      useForNotification,
-      title: def.name,
-      artist: 'Wisp'
-    });
-  }
-
-  async function ensurePreloaded(soundId: string): Promise<void> {
-    if (preloaded.has(soundId)) return;
-    const isFirstActive = active.size === 0;
-    await preloadTrack(soundId, isFirstActive);
-    preloaded.add(soundId);
-  }
-
-  async function promoteToOwner(soundId: string): Promise<void> {
-    const volume = active.get(soundId) ?? 1;
-    // Re-establish the track with useForNotification: true
-    await audio.stop(soundId);
-    preloaded.delete(soundId);
-    await preloadTrack(soundId, true);
-    preloaded.add(soundId);
-    await audio.play(soundId);
-    await audio.setVolume(soundId, volume);
-    notificationOwnerId = soundId;
+  async function teardownAll(): Promise<void> {
+    for (const id of [...created].filter((x) => x !== ownerId)) {
+      await audio.destroy(id);
+      created.delete(id);
+    }
+    if (ownerId !== null && created.has(ownerId)) {
+      await audio.destroy(ownerId);
+      created.delete(ownerId);
+    }
+    created.clear();
+    active.clear();
+    ownerId = null;
   }
 
   return {
-    ensurePreloaded,
     async play(soundId: string): Promise<void> {
-      await ensurePreloaded(soundId);
-      await audio.play(soundId);
-      if (!active.has(soundId)) {
-        active.set(soundId, 1);
-        if (notificationOwnerId === null) {
-          notificationOwnerId = soundId;
-        }
+      if (!created.has(soundId)) {
+        const def = getSound(soundId);
+        if (!def) throw new Error(`Unknown sound: ${soundId}`);
+        const isOwner = ownerId === null;
+        await audio.preload({
+          audioId: def.id,
+          assetPath: def.assetPath,
+          loop: true,
+          useForNotification: isOwner,
+          title: def.name,
+          artist: 'Wisp'
+        });
+        created.add(soundId);
+        if (isOwner) ownerId = soundId;
       }
+      await audio.play(soundId);
+      if (!active.has(soundId)) active.set(soundId, 1);
     },
     async pause(soundId: string): Promise<void> {
       await audio.pause(soundId);
     },
     async stop(soundId: string): Promise<void> {
-      const wasOwner = notificationOwnerId === soundId;
-      await audio.stop(soundId);
+      if (!created.has(soundId)) {
+        active.delete(soundId);
+        return;
+      }
       active.delete(soundId);
-      preloaded.delete(soundId);
-      if (wasOwner) {
-        notificationOwnerId = null;
-        // Promote another active sound to owner if any remain
-        const nextOwnerId = active.keys().next().value as string | undefined;
-        if (nextOwnerId !== undefined) {
-          await promoteToOwner(nextOwnerId);
-        }
+      const others = [...created].filter((x) => x !== soundId);
+      if (soundId !== ownerId) {
+        await audio.destroy(soundId);
+        created.delete(soundId);
+      } else if (others.length === 0) {
+        await audio.destroy(soundId);
+        created.delete(soundId);
+        ownerId = null;
+      } else {
+        // Owner can't be destroyed while others exist — keep it as a silent anchor.
+        await audio.pause(soundId);
+      }
+      // When nothing is audible anymore, fully release (incl. a lingering anchor).
+      if (active.size === 0 && created.size > 0) {
+        await teardownAll();
       }
     },
     async setVolume(soundId: string, volume: number): Promise<void> {
@@ -89,12 +99,7 @@ export function createAudioEngine(audio: NativeAudioAdapter) {
           await audio.setVolume(id, clamp01((starts.get(id) ?? 1) * factor));
         }
       }
-      for (const id of ids) {
-        await audio.stop(id);
-        active.delete(id);
-        preloaded.delete(id);
-      }
-      notificationOwnerId = null;
+      await teardownAll();
     }
   };
 }

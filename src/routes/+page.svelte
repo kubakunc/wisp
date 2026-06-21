@@ -264,7 +264,8 @@
     position: fixed;
     left: 16px;
     right: 16px;
-    bottom: 84px;
+    /* sit just above the bottom nav (which itself is above the banner) */
+    bottom: calc(var(--content-bottom, 72px) + 8px);
     z-index: 50;
     border: 1px solid rgba(124, 140, 240, 0.28);
     border-radius: 18px;

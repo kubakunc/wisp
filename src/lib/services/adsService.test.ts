@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createAdsService } from './adsService';
 import { createFakeAdMob } from '$lib/adapters/fakes/fakeAdMob';
-import { BANNER_HEIGHT_PX } from '$lib/ads/config';
 
 describe('adsService', () => {
   it('shows a banner for free users once consent is obtained', async () => {
@@ -61,12 +60,12 @@ describe('adsService', () => {
     expect(state.consentRequested).toBe(true);
   });
 
-  it('uses the default BANNER_HEIGHT_PX as margin', async () => {
+  it('anchors the banner to the bottom edge (margin 0) by default', async () => {
     const { adapter, state } = createFakeAdMob({ consent: 'obtained' });
     const svc = createAdsService(adapter);
     await svc.init();
     await svc.showIfEligible(false);
-    expect(state.lastMargin).toBe(BANNER_HEIGHT_PX);
+    expect(state.lastMargin).toBe(0);
   });
 
   it('uses custom marginBottomPx when provided', async () => {

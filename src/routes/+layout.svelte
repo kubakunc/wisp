@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { app, RC_API_KEY } from '$lib/app';
-  import { BANNER_HEIGHT_PX } from '$lib/ads/config';
+  import { BANNER_HEIGHT_PX, NAV_HEIGHT_PX } from '$lib/ads/config';
   import BottomNav from '$lib/components/BottomNav.svelte';
 
   const { children } = $props();
@@ -22,14 +22,10 @@
         : 'sounds') as 'sounds' | 'mixes' | 'settings'
   );
 
-  const NAV_HEIGHT = 72;
-  const contentPaddingBottom = $derived(
-    isFullScreen
-      ? 0
-      : $isPremium
-        ? NAV_HEIGHT
-        : NAV_HEIGHT + BANNER_HEIGHT_PX
-  );
+  // The native AdMob banner anchors to the bottom edge (and on Android 15+ the plugin
+  // forces it there). So the bottom nav is lifted ABOVE the banner, and content is
+  // padded for nav + banner (+ the device's bottom safe-area inset).
+  const bannerVisible = $derived(!isFullScreen && $ads.bannerVisible);
 
   // Analytics: fire screen() on route change
   $effect(() => {
@@ -70,21 +66,32 @@
   });
 </script>
 
-<div class="shell" style="padding-bottom:{contentPaddingBottom}px">
+<div
+  class="shell"
+  class:has-banner={bannerVisible}
+  style="--nav-h:{NAV_HEIGHT_PX}px; --banner-h:{BANNER_HEIGHT_PX}px"
+>
   {@render children()}
 </div>
 
 {#if !isFullScreen}
-  <div class="nav-bar">
+  <div class="nav-bar" class:above-banner={bannerVisible} style="--banner-h:{BANNER_HEIGHT_PX}px">
     <BottomNav active={activeTab} />
   </div>
 {/if}
 
 <style>
   .shell {
+    /* content reserves space for the nav (and banner + safe-area when present);
+       --content-bottom is also read by floating UI like the now-playing bar. */
+    --content-bottom: var(--nav-h);
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
+    padding-bottom: var(--content-bottom);
+  }
+  .shell.has-banner {
+    --content-bottom: calc(var(--nav-h) + var(--banner-h) + env(safe-area-inset-bottom, 0px));
   }
 
   .nav-bar {
@@ -93,5 +100,12 @@
     left: 0;
     right: 0;
     z-index: 100;
+    /* opaque block covering the whole bottom zone so nothing peeks behind the banner */
+    background: var(--bg-bot);
+  }
+  /* When a banner shows, pad the nav content up and leave an opaque strip below it
+     (behind the bottom-anchored banner + the device gesture inset). */
+  .nav-bar.above-banner {
+    padding-bottom: calc(var(--banner-h) + env(safe-area-inset-bottom, 0px));
   }
 </style>

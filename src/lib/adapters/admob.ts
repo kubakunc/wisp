@@ -58,8 +58,11 @@ export const admobAdapter: AdMobAdapter = {
       adId: opts.adId,
       position: BannerAdPosition.BOTTOM_CENTER,
       // margin is typed as number | undefined in AdOptions — our narrowed number is safe.
+      // (On Android 15+ the plugin pins the banner to the bottom inset and ignores
+      // this margin; the web layout lifts the nav above the banner instead.)
       margin: opts.marginBottomPx,
-      adSize: BannerAdSize.ADAPTIVE_BANNER
+      // Fixed 320x50 banner → predictable height so the nav can clear it reliably.
+      adSize: BannerAdSize.BANNER
     });
   },
 
