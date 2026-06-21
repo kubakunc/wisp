@@ -1,0 +1,63 @@
+import { describe, it, expect } from 'vitest';
+import { get } from 'svelte/store';
+import { createActiveSoundsStore } from './activeSounds';
+import { createAudioEngine } from '$lib/services/audioEngine';
+import { createFakeNativeAudio } from '$lib/adapters/fakes/fakeNativeAudio';
+
+function make() {
+  const { adapter, state } = createFakeNativeAudio();
+  const engine = createAudioEngine(adapter);
+  return { store: createActiveSoundsStore(engine), state };
+}
+
+describe('activeSounds store', () => {
+  it('toggle adds a playing sound at full volume', async () => {
+    const { store, state } = make();
+    await store.toggle('rain');
+    expect(get(store)).toEqual({ rain: 1 });
+    expect(state.tracks.get('rain')?.playing).toBe(true);
+    expect(store.isActive('rain')).toBe(true);
+  });
+
+  it('toggle twice stops the sound', async () => {
+    const { store, state } = make();
+    await store.toggle('rain');
+    await store.toggle('rain');
+    expect(get(store)).toEqual({});
+    expect(state.tracks.has('rain')).toBe(false);
+  });
+
+  it('setVolume updates the store and the engine', async () => {
+    const { store, state } = make();
+    await store.toggle('rain');
+    await store.setVolume('rain', 0.4);
+    expect(get(store).rain).toBe(0.4);
+    expect(state.tracks.get('rain')?.volume).toBe(0.4);
+  });
+
+  it('currentLayers reflects active sounds', async () => {
+    const { store } = make();
+    await store.toggle('rain');
+    await store.setVolume('rain', 0.3);
+    await store.toggle('fan');
+    expect(store.currentLayers().sort((a, b) => a.soundId.localeCompare(b.soundId))).toEqual([
+      { soundId: 'fan', volume: 1 },
+      { soundId: 'rain', volume: 0.3 }
+    ]);
+  });
+
+  it('applyMix replaces active sounds with the mix layers', async () => {
+    const { store } = make();
+    await store.toggle('ocean');
+    await store.applyMix({ id: 'm', name: 'x', layers: [{ soundId: 'rain', volume: 0.6 }, { soundId: 'fan', volume: 0.2 }] });
+    expect(get(store)).toEqual({ rain: 0.6, fan: 0.2 });
+  });
+
+  it('stopAll clears everything', async () => {
+    const { store } = make();
+    await store.toggle('rain');
+    await store.toggle('fan');
+    await store.stopAll();
+    expect(get(store)).toEqual({});
+  });
+});
