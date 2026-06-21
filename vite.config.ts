@@ -29,6 +29,14 @@ function silenceDepSourcemapWarnings(): Plugin {
 
 export default defineConfig({
   plugins: [sveltekit(), silenceDepSourcemapWarnings(), svelteTesting()],
+  build: {
+    rollupOptions: {
+      // @capacitor-firebase/analytics's web shim imports firebase/analytics (a peer dep that's
+      // not installed, since this is a native Capacitor app).  The native plugin is only used at
+      // runtime on device, so we can safely treat firebase/* as external for the static build.
+      external: (id) => id.startsWith('firebase/'),
+    }
+  },
   test: {
     environment: 'jsdom',
     globals: true,
