@@ -5,7 +5,7 @@
 </script>
 
 <div class="premium-card" class:is-premium={premium}>
-  <WispMark size={44} gradient={premium} />
+  <WispMark size={44} />
   <div class="text-block">
     {#if premium}
       <span class="status-label">Premium</span>

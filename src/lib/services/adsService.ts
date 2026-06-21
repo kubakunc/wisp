@@ -8,8 +8,8 @@ export interface AdsServiceOpts {
 
 export function createAdsService(adapter: AdMobAdapter, opts?: AdsServiceOpts) {
   const adId = opts?.adId ?? TEST_BANNER_AD_ID;
-  // Banner anchors to the bottom edge (margin 0). On Android 15+ the plugin forces
-  // this regardless; the web layout lifts the bottom nav above the banner.
+  // Bottom margin (px) the banner is lifted above the bottom edge so it floats
+  // above the bottom menu. The patched AdMob plugin honors this on Android 15+.
   const marginBottomPx = opts?.marginBottomPx ?? 0;
 
   let lastConsent: ConsentResult | null = null;

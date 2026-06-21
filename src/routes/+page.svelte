@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { app } from '$lib/app';
-  import { SOUNDS, getSound } from '$lib/sounds/registry';
+  import { SOUNDS, getSound, playableLayers } from '$lib/sounds/registry';
   import { WispEvent } from '$lib/analytics/events';
   import SoundRow from '$lib/components/SoundRow.svelte';
   import NowPlayingBar from '$lib/components/NowPlayingBar.svelte';
@@ -36,27 +36,50 @@
   );
 
   function playHeroMix() {
-    sounds.applyMix(heroMix).then(() => {
+    // Never play premium sounds on the free tier — route to the paywall instead
+    // if the favourite mix is entirely premium; otherwise play the allowed subset.
+    const allowed = playableLayers(heroMix.layers, $isPremium);
+    if (allowed.length === 0) {
+      analytics.track(WispEvent.paywallView, { source: 'hero_mix' }).catch(() => {});
+      goto('/paywall');
+      return;
+    }
+    sounds.applyMix({ ...heroMix, layers: allowed }).then(() => {
       analytics.track(WispEvent.mixPlay, { mix_id: heroMix.id }).catch(() => {});
       goto('/now-playing');
     }).catch(() => {});
   }
 
-  // Sound list: active floated to top
+  // Search
+  let searchOpen = $state(false);
+  let query = $state('');
+
+  // Sound list: filter by search, then float active sounds to the top
   const activeSoundIds = $derived(Object.keys($sounds));
+  const filteredSounds = $derived(
+    query.trim()
+      ? SOUNDS.filter((s) => s.name.toLowerCase().includes(query.trim().toLowerCase()))
+      : SOUNDS
+  );
   const sortedSounds = $derived([
-    ...SOUNDS.filter((s) => activeSoundIds.includes(s.id)),
-    ...SOUNDS.filter((s) => !activeSoundIds.includes(s.id))
+    ...filteredSounds.filter((s) => activeSoundIds.includes(s.id)),
+    ...filteredSounds.filter((s) => !activeSoundIds.includes(s.id))
   ]);
 
+  function toggleSearch() {
+    searchOpen = !searchOpen;
+    if (!searchOpen) query = '';
+  }
+
   function handleSoundTap(soundId: string, tier: 'free' | 'premium') {
-    const locked = tier === 'premium' && !$isPremium;
+    const wasActive = activeSoundIds.includes(soundId);
+    // Active sounds can always be turned off; only ACTIVATING a premium sound is gated.
+    const locked = tier === 'premium' && !$isPremium && !wasActive;
     if (locked) {
       analytics.track(WispEvent.paywallView, { source: 'sound_lock' }).catch(() => {});
       goto('/paywall');
       return;
     }
-    const wasActive = activeSoundIds.includes(soundId);
     sounds.toggle(soundId).then(() => {
       if (!wasActive) {
         analytics.track(WispEvent.soundPlay, { sound_id: soundId }).catch(() => {});
@@ -81,7 +104,7 @@
       <span class="eyebrow">Wednesday night</span>
       <h1 class="page-title">Sounds</h1>
     </div>
-    <button class="search-btn" aria-label="Search sounds">
+    <button class="search-btn" class:active={searchOpen} aria-label="Search sounds" aria-pressed={searchOpen} onclick={toggleSearch}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="11" cy="11" r="7"/>
         <path d="M20 20l-3-3"/>
@@ -89,21 +112,45 @@
     </button>
   </header>
 
-  <!-- Hero mix card -->
-  <button class="hero-card" onclick={playHeroMix} aria-label="Play {heroMix.name}">
-    <div class="hero-overlay" aria-hidden="true"></div>
-    <div class="hero-content">
-      <span class="hero-eyebrow">FAVORITE MIX</span>
-      <span class="hero-title">{heroMix.name}</span>
-      <span class="hero-layers">{heroLayerNames}</span>
-      <span class="hero-pill">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <polygon points="5 3 19 12 5 21 5 3"/>
-        </svg>
-        Play mix
-      </span>
+  {#if searchOpen}
+    <div class="search-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/>
+      </svg>
+      <!-- svelte-ignore a11y_autofocus -->
+      <input
+        class="search-input"
+        type="search"
+        placeholder="Search sounds"
+        aria-label="Search sounds"
+        bind:value={query}
+        autofocus
+      />
+      {#if query}
+        <button class="search-clear" aria-label="Clear search" onclick={() => (query = '')}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      {/if}
     </div>
-  </button>
+  {/if}
+
+  <!-- Hero mix card (hidden while searching) -->
+  {#if !searchOpen}
+    <button class="hero-card" onclick={playHeroMix} aria-label="Play {heroMix.name}">
+      <div class="hero-overlay" aria-hidden="true"></div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">FAVORITE MIX</span>
+        <span class="hero-title">{heroMix.name}</span>
+        <span class="hero-layers">{heroLayerNames}</span>
+        <span class="hero-pill">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Play mix
+        </span>
+      </div>
+    </button>
+  {/if}
 
   <!-- Sound list -->
   <section class="sound-list" aria-label="Sound library">
@@ -112,9 +159,11 @@
         {sound}
         active={activeSoundIds.includes(sound.id)}
         volume={$sounds[sound.id] ?? 0}
-        locked={sound.tier === 'premium' && !$isPremium}
+        locked={sound.tier === 'premium' && !$isPremium && !activeSoundIds.includes(sound.id)}
         onPrimary={() => handleSoundTap(sound.id, sound.tier)}
       />
+    {:else}
+      <p class="empty-results">No sounds match “{query}”.</p>
     {/each}
   </section>
 
@@ -145,7 +194,55 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    padding: 56px 24px 8px;
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) 24px 8px;
+  }
+
+  .search-btn.active {
+    background: var(--accent-grad);
+    color: var(--on-accent);
+    border-color: transparent;
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 24px 4px;
+    padding: 12px 16px;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    border: 1px solid rgba(124, 140, 240, 0.25);
+  }
+  .search-input {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 15px;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-clear {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: none;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .empty-results {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    padding: 28px 0;
   }
 
   .header-left {

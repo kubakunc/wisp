@@ -25,7 +25,6 @@
     aria-valuetext={pct}
     oninput={(e) => onVolume(parseFloat((e.target as HTMLInputElement).value))}
   />
-  <span class="vol-label" aria-hidden="true">{pct}</span>
 </div>
 
 <style>
@@ -66,13 +65,5 @@
     opacity: 0;
     cursor: pointer;
     margin: 0;
-  }
-
-  .vol-label {
-    font-size: 12px;
-    color: var(--muted);
-    min-width: 36px;
-    text-align: right;
-    flex-shrink: 0;
   }
 </style>

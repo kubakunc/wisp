@@ -8,6 +8,7 @@ import { createStorageService } from '$lib/services/storageService';
 import { createSubscriptionService } from '$lib/services/subscriptionService';
 import { createAnalyticsService } from '$lib/services/analyticsService';
 import { createAdsService } from '$lib/services/adsService';
+import { NAV_HEIGHT_PX } from '$lib/ads/config';
 import { createActiveSoundsStore } from '$lib/stores/activeSounds';
 import { createSavedMixesStore } from '$lib/stores/savedMixes';
 import { createTimerStore, type TimerDeps } from '$lib/stores/timer';
@@ -34,7 +35,9 @@ export function createApp(deps: AppDeps = {}) {
   const storage = createStorageService(preferences);
   const subscriptionSvc = createSubscriptionService(purchases);
   const analytics = createAnalyticsService(analyticsAdapterImpl);
-  const adsSvc = createAdsService(admobAdapterImpl);
+  // Banner sits one nav-height up from the bottom edge so it floats directly
+  // above the bottom menu (menu at the very bottom, banner above it).
+  const adsSvc = createAdsService(admobAdapterImpl, { marginBottomPx: NAV_HEIGHT_PX });
 
   const sounds = createActiveSoundsStore(engine);
   const mixes = createSavedMixesStore(storage);

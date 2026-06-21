@@ -96,7 +96,7 @@
   }
 
   .header {
-    padding: 56px 24px 8px;
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) 24px 8px;
   }
 
   .page-title {

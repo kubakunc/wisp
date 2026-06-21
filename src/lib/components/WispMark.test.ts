@@ -28,17 +28,10 @@ describe('WispMark', () => {
     expect(el.style.borderRadius).toBe('30px'); // 100 * 0.3
   });
 
-  it('gradient=true: style contains var(--accent-grad)', () => {
-    const { container } = render(WispMark, { gradient: true });
-    const el = container.querySelector('.wisp-mark') as HTMLElement;
-    expect(el.style.background).toContain('var(--accent-grad)');
-  });
-
-  it('gradient=false: style contains var(--accent-1) not accent-grad', () => {
-    const { container } = render(WispMark, { gradient: false });
-    const el = container.querySelector('.wisp-mark') as HTMLElement;
-    expect(el.style.background).toContain('var(--accent-1)');
-    expect(el.style.background).not.toContain('var(--accent-grad)');
+  it('renders the night-sky gradient background + moon gradient defs', () => {
+    const { container } = render(WispMark, { size: 64 });
+    expect(container.querySelector('radialGradient')).toBeTruthy();
+    expect(container.querySelector('linearGradient')).toBeTruthy();
   });
 
   it('is aria-hidden', () => {
@@ -47,9 +40,9 @@ describe('WispMark', () => {
     expect(el?.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('renders the brand (crescent moon) SVG path inside', () => {
+  it('renders the crescent-moon SVG path inside', () => {
     const { container } = render(WispMark);
-    const path = container.querySelector('svg path');
-    expect(path?.getAttribute('d')).toContain('M20.5 14.2');
+    const paths = [...container.querySelectorAll('svg path')].map((p) => p.getAttribute('d') ?? '');
+    expect(paths.some((d) => d.includes('M19 12.5'))).toBe(true);
   });
 });

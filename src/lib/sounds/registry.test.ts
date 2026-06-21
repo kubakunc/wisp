@@ -1,5 +1,23 @@
 import { describe, it, expect } from 'vitest';
-import { SOUNDS, getSound, freeSounds } from './registry';
+import { SOUNDS, getSound, freeSounds, isPlayable, playableLayers } from './registry';
+
+describe('premium gating', () => {
+  it('free users may play free sounds but not premium', () => {
+    expect(isPlayable('rain', false)).toBe(true);
+    expect(isPlayable('thunder', false)).toBe(false);
+  });
+  it('premium users may play everything', () => {
+    expect(isPlayable('thunder', true)).toBe(true);
+  });
+  it('unknown ids are not playable', () => {
+    expect(isPlayable('nope', true)).toBe(false);
+  });
+  it('playableLayers strips premium layers for free users', () => {
+    const layers = [{ soundId: 'rain' }, { soundId: 'thunder' }, { soundId: 'white-noise' }];
+    expect(playableLayers(layers, false).map((l) => l.soundId)).toEqual(['rain', 'white-noise']);
+    expect(playableLayers(layers, true).map((l) => l.soundId)).toEqual(['rain', 'thunder', 'white-noise']);
+  });
+});
 
 describe('sound registry', () => {
   it('has unique ids', () => {

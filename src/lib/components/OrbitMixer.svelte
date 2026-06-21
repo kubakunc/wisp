@@ -1,15 +1,22 @@
 <script lang="ts">
   import OrbitNode from './OrbitNode.svelte';
 
-  let { layers, selectedId, timerLabel, playing, onSelect, onTogglePlay, onAdd }: {
+  let { layers, selectedId, timerLabel, playing, progress = 1, pulse = false, onSelect, onTogglePlay, onAdd }: {
     layers: { soundId: string; volume: number }[];
     selectedId: string | null;
     timerLabel: string;
     playing: boolean;
+    /** 0..1 fraction of the timer ring to fill (1 = full). */
+    progress?: number;
+    /** pulse the ring (e.g. when no countdown is running). */
+    pulse?: boolean;
     onSelect: (id: string) => void;
     onTogglePlay: () => void;
     onAdd: () => void;
   } = $props();
+
+  const RING_CIRC = 2 * Math.PI * 48;
+  const ringOffset = $derived(RING_CIRC * (1 - Math.max(0, Math.min(1, progress))));
 
   function angleForIndex(i: number, total: number): number {
     return (i / total) * 360;
@@ -48,6 +55,7 @@
       <!-- arc circle: 2/3 filled, starting from top (-90deg rotation) -->
       <circle
         class="ring-arc"
+        class:pulse
         cx="100"
         cy="100"
         r="48"
@@ -55,8 +63,8 @@
         stroke="url(#ring-grad)"
         stroke-width="3"
         stroke-linecap="round"
-        stroke-dasharray="201 100"
-        stroke-dashoffset="0"
+        stroke-dasharray={RING_CIRC}
+        stroke-dashoffset={ringOffset}
         transform="rotate(-90 100 100)"
       />
     </svg>
@@ -135,6 +143,13 @@
     top: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
+  }
+
+  .ring-arc {
+    transition: stroke-dashoffset 0.5s linear;
+  }
+  .ring-arc.pulse {
+    animation: wispPulse 2.4s ease-in-out infinite;
   }
 
   .orb-glow {

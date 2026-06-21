@@ -23,13 +23,15 @@ export function createSubscriptionStore(svc: SubscriptionService) {
       const premium = await svc.isPremium();
       update((s) => ({ ...s, premium }));
     },
-    async buy(pkg: PackageLite): Promise<void> {
+    async buy(pkg: PackageLite): Promise<boolean> {
       const premium = await svc.buy(pkg);
       update((s) => ({ ...s, premium }));
+      return premium;
     },
-    async restore(): Promise<void> {
+    async restore(): Promise<boolean> {
       const premium = await svc.restore();
       update((s) => ({ ...s, premium }));
+      return premium;
     },
     async listPackages() {
       return svc.listPackages();

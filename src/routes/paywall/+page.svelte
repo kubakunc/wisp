@@ -9,10 +9,18 @@
 
   const { subscription, analytics } = app;
 
+  // Shown when RevenueCat has no live offerings yet (e.g. no API key configured).
+  // Keeps the cards selectable + priced; a real purchase requires billing config.
+  const FALLBACK_PACKAGES: PackageLite[] = [
+    { identifier: 'fallback_annual', productId: 'wisp_premium_annual', priceString: '$39.99', packageType: 'ANNUAL' },
+    { identifier: 'fallback_monthly', productId: 'wisp_premium_monthly', priceString: '$6.99', packageType: 'MONTHLY' }
+  ];
+
   let packages = $state<PackageLite[]>([]);
   let selectedPkg = $state<PackageLite | null>(null);
   let loading = $state(true);
   let buying = $state(false);
+  let notice = $state('');
 
   const annualPkg = $derived(packages.find((p) => p.packageType === 'ANNUAL') ?? null);
   const monthlyPkg = $derived(packages.find((p) => p.packageType === 'MONTHLY') ?? null);
@@ -21,11 +29,11 @@
     analytics.track(WispEvent.paywallView).catch(() => {});
     try {
       const offerings = await subscription.listPackages();
-      packages = offerings;
-      selectedPkg = offerings.find((p) => p.packageType === 'ANNUAL') ?? offerings[0] ?? null;
+      packages = offerings.length > 0 ? offerings : FALLBACK_PACKAGES;
     } catch {
-      packages = [];
+      packages = FALLBACK_PACKAGES;
     } finally {
+      selectedPkg = packages.find((p) => p.packageType === 'ANNUAL') ?? packages[0] ?? null;
       loading = false;
     }
   });
@@ -37,24 +45,34 @@
   async function handleBuy() {
     if (!selectedPkg || buying) return;
     buying = true;
+    notice = '';
     try {
-      await subscription.buy(selectedPkg);
-      analytics.track(WispEvent.purchase, { pkg_id: selectedPkg.identifier }).catch(() => {});
-      goto('/');
+      const ok = await subscription.buy(selectedPkg);
+      if (ok) {
+        analytics.track(WispEvent.purchase, { pkg_id: selectedPkg.identifier }).catch(() => {});
+        goto('/');
+      } else {
+        notice = 'Subscriptions aren’t available in this build yet. Add a RevenueCat key to enable purchases.';
+      }
     } catch {
-      // Purchase cancelled or error — stay on paywall
+      notice = 'Purchase could not be completed. Please try again.';
     } finally {
       buying = false;
     }
   }
 
   async function handleRestore() {
+    notice = '';
     try {
-      await subscription.restore();
-      analytics.track(WispEvent.restore).catch(() => {});
-      goto('/');
+      const ok = await subscription.restore();
+      if (ok) {
+        analytics.track(WispEvent.restore).catch(() => {});
+        goto('/');
+      } else {
+        notice = 'No previous purchases found to restore.';
+      }
     } catch {
-      // ignore
+      notice = 'Could not restore purchases.';
     }
   }
 
@@ -75,7 +93,7 @@
 
   <!-- Brand -->
   <div class="brand-block">
-    <WispMark size={64} gradient={true} />
+    <WispMark size={64} />
     <h1 class="paywall-title">Wisp Premium</h1>
     <p class="paywall-sub">Everything you need for a perfect night.<br>Less than half what Calm or Headspace charge.</p>
   </div>
@@ -103,29 +121,13 @@
           featured={selectedPkg?.identifier === annualPkg.identifier}
           onSelect={() => { selectedPkg = annualPkg; }}
         />
-      {:else}
-        <!-- Fallback annual card -->
-        <div class="pkg-placeholder featured-placeholder">
-          <span class="pkg-badge">BEST VALUE · SAVE 60%</span>
-          <span class="pkg-type">Annual</span>
-          <span class="pkg-price">$39.99 / year</span>
-          <span class="pkg-note trial">7-day free trial</span>
-        </div>
       {/if}
-
       {#if monthlyPkg}
         <PackageCard
           pkg={monthlyPkg}
           featured={selectedPkg?.identifier === monthlyPkg.identifier}
           onSelect={() => { selectedPkg = monthlyPkg; }}
         />
-      {:else}
-        <!-- Fallback monthly card -->
-        <div class="pkg-placeholder">
-          <span class="pkg-type">Monthly</span>
-          <span class="pkg-price">$6.99 / month</span>
-          <span class="pkg-note">Cancel anytime</span>
-        </div>
       {/if}
     </div>
   {:else}
@@ -136,6 +138,10 @@
   <button class="cta-btn" onclick={handleBuy} disabled={!selectedPkg || buying} aria-busy={buying}>
     {buying ? 'Processing…' : 'Start 7-day free trial'}
   </button>
+
+  {#if notice}
+    <p class="paywall-notice" role="alert">{notice}</p>
+  {/if}
 
   <!-- Footer links -->
   <footer class="paywall-footer">
@@ -160,7 +166,7 @@
 
   .close-btn {
     position: absolute;
-    top: 54px;
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
     left: 24px;
     width: 36px;
     height: 36px;
@@ -179,8 +185,17 @@
     flex-direction: column;
     align-items: center;
     gap: 12px;
-    margin-top: 80px;
+    margin-top: calc(env(safe-area-inset-top, 0px) + 70px);
     text-align: center;
+  }
+
+  .paywall-notice {
+    margin-top: 14px;
+    max-width: 340px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
   }
 
   .paywall-title {
@@ -249,58 +264,6 @@
     margin-top: 20px;
     color: var(--muted);
     font-size: 14px;
-  }
-
-  /* Fallback package placeholders */
-  .pkg-placeholder {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    padding: 16px;
-    border-radius: var(--r-card);
-    background: var(--surface);
-    border: 1.5px solid rgba(255, 255, 255, 0.07);
-    width: 100%;
-  }
-
-  .featured-placeholder {
-    border-color: var(--accent-1);
-    background: rgba(124, 140, 240, 0.08);
-  }
-
-  .pkg-badge {
-    font-size: 10px;
-    font-weight: 800;
-    background: var(--accent-grad);
-    color: var(--on-accent);
-    padding: 3px 10px;
-    border-radius: var(--r-pill);
-    letter-spacing: 0.06em;
-    align-self: flex-start;
-  }
-
-  .pkg-type {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  .pkg-price {
-    font-size: 22px;
-    font-weight: 800;
-    color: var(--text);
-  }
-
-  .pkg-note {
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  .trial {
-    color: var(--accent-1);
-    font-weight: 600;
   }
 
   .cta-btn {

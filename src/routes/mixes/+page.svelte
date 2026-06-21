@@ -4,9 +4,11 @@
   import { app } from '$lib/app';
   import { WispEvent } from '$lib/analytics/events';
   import MixCard from '$lib/components/MixCard.svelte';
+  import { playableLayers } from '$lib/sounds/registry';
   import type { Mix } from '$lib/types';
 
-  const { sounds, mixes, analytics } = app;
+  const { sounds, mixes, subscription, analytics } = app;
+  const { isPremium } = subscription;
 
   onMount(() => {
     mixes.load().catch(() => {});
@@ -21,7 +23,15 @@
   }
 
   function handlePlay(mix: Mix) {
-    sounds.applyMix(mix).then(() => {
+    // Free users can't play premium sounds — play the allowed subset, or route to
+    // the paywall if the mix is entirely premium.
+    const allowed = playableLayers(mix.layers, $isPremium);
+    if (allowed.length === 0) {
+      analytics.track(WispEvent.paywallView, { source: 'mix_premium' }).catch(() => {});
+      goto('/paywall');
+      return;
+    }
+    sounds.applyMix({ ...mix, layers: allowed }).then(() => {
       analytics.track(WispEvent.mixPlay, { mix_id: mix.id }).catch(() => {});
       goto('/now-playing');
     }).catch(() => {});
@@ -48,6 +58,8 @@
         onPlay={() => handlePlay(mix)}
         onDelete={() => handleDelete(mix.id)}
       />
+    {:else}
+      <p class="empty-mixes">No saved mixes yet. Layer some sounds and tap <strong>Save</strong>.</p>
     {/each}
   </section>
 
@@ -68,7 +80,7 @@
   }
 
   .header {
-    padding: 56px 24px 8px;
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) 24px 8px;
     display: flex;
     flex-direction: column;
     gap: 3px;
@@ -94,6 +106,14 @@
     flex-direction: column;
     gap: 12px;
     padding: 16px 22px 0;
+  }
+
+  .empty-mixes {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 28px 12px;
   }
 
   .create-mix-btn {

@@ -58,8 +58,8 @@ export const admobAdapter: AdMobAdapter = {
       adId: opts.adId,
       position: BannerAdPosition.BOTTOM_CENTER,
       // margin is typed as number | undefined in AdOptions — our narrowed number is safe.
-      // (On Android 15+ the plugin pins the banner to the bottom inset and ignores
-      // this margin; the web layout lifts the nav above the banner instead.)
+      // The patched plugin adds (margin * density) to the bottom system inset on
+      // Android 15+, so the banner floats this many dp above the bottom menu.
       margin: opts.marginBottomPx,
       // Fixed 320x50 banner → predictable height so the nav can clear it reliably.
       adSize: BannerAdSize.BANNER

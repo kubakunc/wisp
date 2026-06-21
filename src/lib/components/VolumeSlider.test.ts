@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/svelte';
+import { render, fireEvent } from '@testing-library/svelte';
 import VolumeSlider from './VolumeSlider.svelte';
 
 describe('VolumeSlider', () => {
@@ -23,9 +23,10 @@ describe('VolumeSlider', () => {
     expect(parseFloat(input.value)).toBeCloseTo(0.75);
   });
 
-  it('displays formatted percentage', () => {
-    render(VolumeSlider, { volume: 0.6, onVolume: () => {} });
-    expect(screen.getByText('60%')).toBeTruthy();
+  it('exposes the formatted percentage via aria-valuetext', () => {
+    const { container } = render(VolumeSlider, { volume: 0.6, onVolume: () => {} });
+    const input = container.querySelector('input[type="range"]');
+    expect(input?.getAttribute('aria-valuetext')).toBe('60%');
   });
 
   it('uses default label "Volume"', () => {
@@ -48,13 +49,13 @@ describe('VolumeSlider', () => {
     expect(onVolume).toHaveBeenCalledWith(0.8);
   });
 
-  it('shows 0% for volume 0', () => {
-    render(VolumeSlider, { volume: 0, onVolume: () => {} });
-    expect(screen.getByText('0%')).toBeTruthy();
+  it('aria-valuetext is 0% for volume 0', () => {
+    const { container } = render(VolumeSlider, { volume: 0, onVolume: () => {} });
+    expect(container.querySelector('input')?.getAttribute('aria-valuetext')).toBe('0%');
   });
 
-  it('shows 100% for volume 1', () => {
-    render(VolumeSlider, { volume: 1, onVolume: () => {} });
-    expect(screen.getByText('100%')).toBeTruthy();
+  it('aria-valuetext is 100% for volume 1', () => {
+    const { container } = render(VolumeSlider, { volume: 1, onVolume: () => {} });
+    expect(container.querySelector('input')?.getAttribute('aria-valuetext')).toBe('100%');
   });
 });

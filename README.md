@@ -97,15 +97,9 @@ After `npm run build && npx cap sync android` they are copied into `android/app/
 
 **Naming:** the `file` in `sounds.json` must match the filename in `static/sounds/` exactly.
 
-**Noise colors** (`white-noise`, `pink-noise`, `brown-noise`, `blue-noise`, `grey-noise`) ship as generated seamless-loop **WAV** files — run `node scripts/generate-noise.mjs` to (re)create them in `static/sounds/`. They are synthesized (white/pink/brown/blue/grey), not recorded.
+**All sounds ship as generated seamless-loop WAV files.** Run `node scripts/generate-sounds.mjs` to (re)create them in `static/sounds/`. The generator reads `sounds.json` and synthesizes one procedural, deterministic, royalty-free ambience per entry (noise colours, rain, ocean, fire, crickets, chimes, etc.) — not field recordings.
 
-**Nature sounds** must be:
-- CC0 / royalty-free licensed (sources: Freesound.org CC0 filter, BBC Sound Effects, Zapsplat free tier)
-- Loudness-normalized to −14 LUFS (use `ffmpeg-normalize` or Audacity's Normalize effect)
-- Loop-verified: the tail must crossfade seamlessly back to the head (edit in Audacity with zero-crossing snapping)
-- Encoded at 128–192 kbps MP3, mono or stereo as appropriate
-
-The registry currently uses placeholder asset paths — the files are not committed to the repo. The app will display all sound tiles; tapping a tile without a corresponding file will produce a native-audio error in logcat, which you can diagnose with `adb logcat`.
+**Swapping in a real recording:** drop the file in `static/sounds/` and point that catalogue entry's `file` at it. `generate-sounds.mjs` only (re)writes entries whose `file` ends in `.wav`, so an entry pointing at e.g. `rain.mp3` is left untouched. Real recordings should be CC0/royalty-free, loudness-normalized (~−14 LUFS), and loop-verified (seamless tail→head crossfade).
 
 ---
 

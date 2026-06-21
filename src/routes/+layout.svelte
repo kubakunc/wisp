@@ -33,10 +33,17 @@
     analytics.screen(name).catch(() => {});
   });
 
-  // AdMob: sync banner when isPremium changes
+  // AdMob: the banner is a native overlay, so it must be actively hidden on
+  // full-screen routes (now-playing, paywall) or it covers their controls.
+  // Re-syncs on route change and entitlement change.
   $effect(() => {
     const premium = $isPremium;
-    ads.sync(premium).catch(() => {});
+    const full = isFullScreen;
+    if (full) {
+      ads.hide().catch(() => {});
+    } else {
+      ads.sync(premium).catch(() => {});
+    }
   });
 
   // Timer: clear sounds when timer resets to 'off' after firing
@@ -75,16 +82,17 @@
 </div>
 
 {#if !isFullScreen}
-  <div class="nav-bar" class:above-banner={bannerVisible} style="--banner-h:{BANNER_HEIGHT_PX}px">
+  <div class="nav-bar">
     <BottomNav active={activeTab} />
   </div>
 {/if}
 
 <style>
   .shell {
-    /* content reserves space for the nav (and banner + safe-area when present);
+    /* content reserves space for the nav at the very bottom (+ device safe-area),
+       plus the banner strip that sits directly above the nav when present.
        --content-bottom is also read by floating UI like the now-playing bar. */
-    --content-bottom: var(--nav-h);
+    --content-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
@@ -94,18 +102,15 @@
     --content-bottom: calc(var(--nav-h) + var(--banner-h) + env(safe-area-inset-bottom, 0px));
   }
 
+  /* Menu sits at the very bottom; the native banner is anchored one nav-height up,
+     so it floats directly ABOVE this bar. */
   .nav-bar {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     z-index: 100;
-    /* opaque block covering the whole bottom zone so nothing peeks behind the banner */
     background: var(--bg-bot);
-  }
-  /* When a banner shows, pad the nav content up and leave an opaque strip below it
-     (behind the bottom-anchored banner + the device gesture inset). */
-  .nav-bar.above-banner {
-    padding-bottom: calc(var(--banner-h) + env(safe-area-inset-bottom, 0px));
+    /* BottomNav owns its own safe-area inset padding; don't double it here. */
   }
 </style>

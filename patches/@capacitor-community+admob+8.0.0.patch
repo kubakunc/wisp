@@ -1,0 +1,18 @@
+diff --git a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
+index c629139..38d9d7a 100644
+--- a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
++++ b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
+@@ -110,10 +110,11 @@ public class BannerExecutor extends Executor {
+                     int bottomInset = insets.getSystemWindowInsetBottom();
+                     int topInset = insets.getSystemWindowInsetTop();
+ 
++                    int extraMargin = (int) (adOptions.margin * density);
+                     if ("TOP_CENTER".equals(adOptions.position)) {
+-                        mAdViewLayoutParams.setMargins(0, topInset, 0, 0);
++                        mAdViewLayoutParams.setMargins(0, topInset + extraMargin, 0, 0);
+                     } else {
+-                        mAdViewLayoutParams.setMargins(0, 0, 0, bottomInset);
++                        mAdViewLayoutParams.setMargins(0, 0, 0, bottomInset + extraMargin);
+                     }
+ 
+                     mAdViewLayout.setLayoutParams(mAdViewLayoutParams);
