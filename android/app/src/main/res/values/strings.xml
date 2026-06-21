@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Wisp</string>
+    <string name="title_activity_main">Wisp</string>
+    <string name="package_name">com.velologiclabs.wisp</string>
+    <string name="custom_url_scheme">com.velologiclabs.wisp</string>
+</resources>
