@@ -8,6 +8,7 @@
   import TimerSheet from '$lib/components/TimerSheet.svelte';
 
   const { sounds, mixes, timer, subscription, analytics } = app;
+  const soundsPaused = sounds.paused;
   const { isPremium } = subscription;
 
   // Current layers — derived from the reactive store value so updates propagate
@@ -109,7 +110,7 @@
     sounds.setVolume(soundId, vol).catch(() => {});
   }
 
-  const isPlaying = $derived(activeCount > 0);
+  const isPlaying = $derived(activeCount > 0 && !$soundsPaused);
 </script>
 
 <div class="now-playing" class:single={isSingle}>
@@ -138,8 +139,8 @@
       <div class="single-sub">Gentle · loops seamlessly</div>
 
       <!-- Big play orb -->
-      <div class="single-orb-wrap" aria-label="Sound playing">
-        <div class="orb-glow" aria-hidden="true"></div>
+      <div class="single-orb-wrap" aria-label={isPlaying ? 'Pause sound' : 'Play sound'}>
+        <div class="orb-glow" class:playing={isPlaying} aria-hidden="true"></div>
         <svg class="orb-ring" width="216" height="216" viewBox="0 0 216 216" aria-hidden="true">
           <defs>
             <linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
@@ -152,16 +153,26 @@
             stroke-linecap="round" stroke-dasharray="628" stroke-dashoffset="209"
             transform="rotate(-90 108 108)"/>
         </svg>
-        <div class="single-orb">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="var(--on-accent)" aria-hidden="true">
-            <rect x="6" y="4" width="4" height="16" rx="1.4"/>
-            <rect x="14" y="4" width="4" height="16" rx="1.4"/>
-          </svg>
+        <button
+          class="single-orb"
+          aria-label={isPlaying ? 'Pause' : 'Play'}
+          onclick={() => sounds.togglePlayback().catch(() => {})}
+        >
+          {#if isPlaying}
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="var(--on-accent)" aria-hidden="true">
+              <rect x="6" y="4" width="4" height="16" rx="1.4"/>
+              <rect x="14" y="4" width="4" height="16" rx="1.4"/>
+            </svg>
+          {:else}
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="var(--on-accent)" aria-hidden="true">
+              <polygon points="6 3 20 12 6 21 6 3"/>
+            </svg>
+          {/if}
           {#if timerLabel}
             <span class="single-timer-label">{timerLabel}</span>
             <span class="single-timer-sub">timer</span>
           {/if}
-        </div>
+        </button>
       </div>
 
       <!-- Volume slider -->
@@ -199,9 +210,7 @@
         {timerLabel}
         playing={isPlaying}
         onSelect={(id) => { selectedId = id; }}
-        onTogglePlay={() => {
-          if (isPlaying) sounds.stopAll().catch(() => {});
-        }}
+        onTogglePlay={() => sounds.togglePlayback().catch(() => {})}
         onAdd={() => goto('/')}
       />
 
@@ -353,6 +362,9 @@
     border-radius: 50%;
     background: radial-gradient(circle, rgba(124, 140, 240, 0.35), transparent 68%);
     filter: blur(20px);
+  }
+
+  .orb-glow.playing {
     animation: wispBreathe 6s ease-in-out infinite;
   }
 
@@ -366,12 +378,21 @@
     inset: 34px;
     border-radius: 50%;
     background: var(--accent-grad);
+    border: none;
+    cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 4px;
     box-shadow: 0 14px 56px rgba(124, 140, 240, 0.55);
+    transition: opacity 0.15s, transform 0.15s;
+    padding: 0;
+  }
+
+  .single-orb:hover {
+    opacity: 0.88;
+    transform: scale(1.04);
   }
 
   .single-timer-label {

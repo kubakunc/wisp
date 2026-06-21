@@ -73,4 +73,70 @@ describe('activeSounds store', () => {
     expect(get(store)).toEqual({});
     expect(state.tracks.size).toBe(0);
   });
+
+  it('pauseAll pauses tracks without removing them from the store', async () => {
+    const { store, state } = make();
+    await store.toggle('rain');
+    await store.toggle('fan');
+    await store.pauseAll();
+    // Store still contains both sounds
+    expect(get(store)).toEqual({ rain: 1, fan: 1 });
+    // Tracks still exist but are paused
+    expect(state.tracks.get('rain')?.playing).toBe(false);
+    expect(state.tracks.get('fan')?.playing).toBe(false);
+    // paused sub-store reflects state
+    expect(get(store.paused)).toBe(true);
+  });
+
+  it('resumeAll resumes paused tracks', async () => {
+    const { store, state } = make();
+    await store.toggle('rain');
+    await store.pauseAll();
+    await store.resumeAll();
+    expect(state.tracks.get('rain')?.playing).toBe(true);
+    expect(get(store.paused)).toBe(false);
+    // Store still contains the sound
+    expect(get(store)).toEqual({ rain: 1 });
+  });
+
+  it('togglePlayback pauses when playing, resumes when paused', async () => {
+    const { store, state } = make();
+    await store.toggle('rain');
+    // Initially not paused
+    expect(get(store.paused)).toBe(false);
+    // First toggle → pauses
+    await store.togglePlayback();
+    expect(get(store.paused)).toBe(true);
+    expect(state.tracks.get('rain')?.playing).toBe(false);
+    // Second toggle → resumes
+    await store.togglePlayback();
+    expect(get(store.paused)).toBe(false);
+    expect(state.tracks.get('rain')?.playing).toBe(true);
+  });
+
+  it('toggle clears paused state when last sound is removed', async () => {
+    const { store } = make();
+    await store.toggle('rain');
+    await store.pauseAll();
+    expect(get(store.paused)).toBe(true);
+    await store.toggle('rain'); // remove the only sound
+    expect(get(store.paused)).toBe(false);
+  });
+
+  it('toggle resets paused state when adding a new sound', async () => {
+    const { store, state } = make();
+    await store.toggle('rain');
+    await store.pauseAll();
+    await store.toggle('fan');
+    expect(get(store.paused)).toBe(false);
+    expect(state.tracks.get('fan')?.playing).toBe(true);
+  });
+
+  it('stopAll resets paused state', async () => {
+    const { store } = make();
+    await store.toggle('rain');
+    await store.pauseAll();
+    await store.stopAll();
+    expect(get(store.paused)).toBe(false);
+  });
 });

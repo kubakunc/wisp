@@ -52,7 +52,7 @@
 
   .status-sub {
     font-size: 12px;
-    color: rgba(12, 18, 38, 0.7);
+    color: rgba(12, 18, 38, 0.85);
   }
 
   .premium-card:not(.is-premium) .status-sub {

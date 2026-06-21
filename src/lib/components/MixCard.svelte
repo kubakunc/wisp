@@ -22,9 +22,9 @@
       <div class="playing-header">
         <span class="playing-label">PLAYING</span>
         <div class="equalizer" aria-hidden="true">
-          <span class="bar" style="animation-delay:0s"></span>
-          <span class="bar" style="animation-delay:0.2s"></span>
-          <span class="bar" style="animation-delay:0.4s"></span>
+          <span class="bar bar-1"></span>
+          <span class="bar bar-2"></span>
+          <span class="bar bar-3"></span>
         </div>
       </div>
     {/if}
@@ -113,12 +113,15 @@
   .bar {
     display: block;
     width: 2px;
-    height: 12px;
     border-radius: 1px;
     background: var(--accent-1);
     transform-origin: bottom;
-    animation: wispBar 0.8s ease-in-out infinite;
+    animation: wispBar 0.8s ease-in-out infinite alternate;
   }
+
+  .bar-1 { height: 8px; animation-delay: 0s; }
+  .bar-2 { height: 12px; animation-delay: 0.18s; }
+  .bar-3 { height: 6px; animation-delay: 0.36s; }
 
   .mix-name {
     font-family: var(--font-display);

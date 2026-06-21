@@ -242,7 +242,7 @@
     width: 100%;
     padding: 16px;
     border-radius: var(--r-pill);
-    background: var(--accent-grad);
+    background: var(--accent-1);
     border: none;
     color: var(--on-accent);
     font-size: 16px;

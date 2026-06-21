@@ -9,6 +9,7 @@
   import type { Mix } from '$lib/types';
 
   const { sounds, mixes, subscription, analytics } = app;
+  const soundsPaused = sounds.paused;
   const { isPremium } = subscription;
 
   // Load mixes on mount
@@ -70,7 +71,7 @@
       .map((id) => getSound(id)?.name ?? id)
       .join(' · ')
   );
-  const isPlaying = $derived(activeCount > 0);
+  const isPlaying = $derived(activeCount > 0 && !$soundsPaused);
 </script>
 
 <div class="home">
@@ -125,7 +126,7 @@
         names={activeNames}
         playing={isPlaying}
         onOpen={() => goto('/now-playing')}
-        onTogglePlay={() => sounds.stopAll().catch(() => {})}
+        onTogglePlay={() => sounds.togglePlayback().catch(() => {})}
       />
     </div>
   {/if}
@@ -256,7 +257,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 12px 18px 0;
+    padding: 12px 16px 0;
   }
 
   .now-playing-wrap {

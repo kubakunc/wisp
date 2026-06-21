@@ -4,6 +4,7 @@ import type { Mix, MixLayer } from '$lib/types';
 
 export function createActiveSoundsStore(engine: AudioEngine) {
   const { subscribe, set, update } = writable<Record<string, number>>({});
+  const { subscribe: subscribePaused, set: setPaused } = writable<boolean>(false);
 
   const isActive = (soundId: string) => soundId in get({ subscribe });
 
@@ -12,10 +13,37 @@ export function createActiveSoundsStore(engine: AudioEngine) {
       await engine.stop(id);
     }
     set({});
+    setPaused(false);
+  }
+
+  /** Pause all active sounds without removing them from the store. */
+  async function pauseAll(): Promise<void> {
+    for (const id of Object.keys(get({ subscribe }))) {
+      await engine.pause(id);
+    }
+    setPaused(true);
+  }
+
+  /** Resume all sounds that are in the store (were paused, not stopped). */
+  async function resumeAll(): Promise<void> {
+    for (const id of Object.keys(get({ subscribe }))) {
+      await engine.play(id);
+    }
+    setPaused(false);
+  }
+
+  /** Toggle between paused and playing for all active sounds. */
+  async function togglePlayback(): Promise<void> {
+    if (get({ subscribe: subscribePaused })) {
+      await resumeAll();
+    } else {
+      await pauseAll();
+    }
   }
 
   return {
     subscribe,
+    paused: { subscribe: subscribePaused },
     isActive,
     async toggle(soundId: string): Promise<void> {
       if (isActive(soundId)) {
@@ -24,9 +52,15 @@ export function createActiveSoundsStore(engine: AudioEngine) {
           const { [soundId]: _removed, ...rest } = s;
           return rest;
         });
+        // If no sounds left, reset paused state
+        if (Object.keys(get({ subscribe })).length === 0) {
+          setPaused(false);
+        }
       } else {
         await engine.play(soundId);
         update((s) => ({ ...s, [soundId]: 1 }));
+        // A new sound starting should clear paused state
+        setPaused(false);
       }
     },
     async setVolume(soundId: string, volume: number): Promise<void> {
@@ -48,7 +82,10 @@ export function createActiveSoundsStore(engine: AudioEngine) {
       }
       set(newState);
     },
-    stopAll
+    stopAll,
+    pauseAll,
+    resumeAll,
+    togglePlayback
   };
 }
 

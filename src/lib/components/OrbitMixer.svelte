@@ -124,8 +124,8 @@
 
   .orbit-stage {
     position: relative;
-    width: 320px;
-    height: 320px;
+    width: min(320px, calc(100vw - 48px));
+    height: min(320px, calc(100vw - 48px));
     flex-shrink: 0;
   }
 

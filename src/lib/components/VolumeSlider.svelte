@@ -61,8 +61,8 @@
     left: 0;
     top: 50%;
     transform: translateY(-50%);
-    width: calc(100% - 42px);
-    height: 6px;
+    width: 100%;
+    height: 44px;
     opacity: 0;
     cursor: pointer;
     margin: 0;

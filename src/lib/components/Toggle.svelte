@@ -44,6 +44,15 @@
     opacity: 0.4;
   }
 
+  .toggle:active {
+    transform: scale(0.95);
+  }
+
+  .toggle:focus-visible {
+    outline: 2px solid var(--accent-1);
+    outline-offset: 3px;
+  }
+
   .knob {
     position: absolute;
     top: 3px;
