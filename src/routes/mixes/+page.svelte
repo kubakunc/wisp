@@ -45,9 +45,10 @@
       goto('/paywall');
       return;
     }
+    // Play in place — the persistent now-playing bar (layout) appears; the full
+    // player opens only when the user taps that bar, not on every play.
     sounds.applyMix({ ...mix, layers: allowed }).then(() => {
       analytics.track(WispEvent.mixPlay, { mix_id: mix.id }).catch(() => {});
-      goto('/now-playing');
     }).catch(() => {});
   }
 

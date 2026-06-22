@@ -254,13 +254,20 @@ await check('paywall: close → leaves paywall', async () => {
   return { pass: s.path !== '/paywall', path: s.path };
 });
 
-// === HERO MIX → NOW-PLAYING =================================================
-await check('hero mix: play → now-playing', async () => {
+// === HERO MIX → PLAYS IN PLACE, BAR OPENS THE PLAYER ========================
+await check('hero mix: play shows the now-playing bar (no forced navigation)', async () => {
   await homeReset(); await inject();
   await page.evaluate(() => window.__t.clickSel('.hero-card'));
-  // The default mix's first layer (rain) is a remote sound; on a cold cache
-  // applyMix downloads it before navigating, so allow time for the download.
+  // The default mix's first layer (rain) is remote; on a cold cache applyMix
+  // downloads it before the bar appears, so allow time. Play must NOT navigate.
   await sleep(4500);
+  const s = await st();
+  return { pass: s.npBar && s.path === '/', npBar: s.npBar, path: s.path };
+});
+await check('now-playing bar: tap opens the full player', async () => {
+  await inject();
+  await page.evaluate(() => window.__t.clickSel('.now-playing-bar'));
+  await sleep(900);
   const s = await st();
   return { pass: s.path === '/now-playing', path: s.path };
 });

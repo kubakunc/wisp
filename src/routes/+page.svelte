@@ -6,11 +6,9 @@
   import { phraseForDate } from '$lib/phrases';
   import { WispEvent } from '$lib/analytics/events';
   import SoundRow from '$lib/components/SoundRow.svelte';
-  import NowPlayingBar from '$lib/components/NowPlayingBar.svelte';
   import type { Mix } from '$lib/types';
 
   const { sounds, mixes, subscription, analytics, downloads } = app;
-  const soundsPaused = sounds.paused;
   const { isPremium } = subscription;
 
   // Load mixes on mount
@@ -47,7 +45,6 @@
     }
     sounds.applyMix({ ...heroMix, layers: allowed }).then(() => {
       analytics.track(WispEvent.mixPlay, { mix_id: heroMix.id }).catch(() => {});
-      goto('/now-playing');
     }).catch(() => {});
   }
 
@@ -88,14 +85,6 @@
     }).catch(() => {});
   }
 
-  // NowPlayingBar
-  const activeCount = $derived(activeSoundIds.length);
-  const activeNames = $derived(
-    activeSoundIds
-      .map((id) => getSound(id)?.name ?? id)
-      .join(' · ')
-  );
-  const isPlaying = $derived(activeCount > 0 && !$soundsPaused);
 
   // Header: a calming bedtime phrase (rotates daily) over a live time-of-day
   // greeting, instead of a static "Sounds" title.
@@ -180,19 +169,6 @@
       <p class="empty-results">No sounds match “{query}”.</p>
     {/each}
   </section>
-
-  <!-- NowPlayingBar -->
-  {#if activeCount > 0}
-    <div class="now-playing-wrap">
-      <NowPlayingBar
-        count={activeCount}
-        names={activeNames}
-        playing={isPlaying}
-        onOpen={() => goto('/now-playing')}
-        onTogglePlay={() => sounds.togglePlayback().catch(() => {})}
-      />
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -369,17 +345,5 @@
     flex-direction: column;
     gap: 8px;
     padding: 12px 16px 0;
-  }
-
-  .now-playing-wrap {
-    position: fixed;
-    left: 16px;
-    right: 16px;
-    /* sit just above the bottom nav (which itself is above the banner) */
-    bottom: calc(var(--content-bottom, 72px) + 8px);
-    z-index: 50;
-    border: 1px solid rgba(124, 140, 240, 0.28);
-    border-radius: 18px;
-    overflow: hidden;
   }
 </style>

@@ -2,10 +2,13 @@
   import '../app.css';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { app, RC_API_KEY } from '$lib/app';
   import { BANNER_HEIGHT_PX, NAV_HEIGHT_PX } from '$lib/ads/config';
+  import { getSound } from '$lib/sounds/registry';
   import { modalOpen } from '$lib/stores/ui';
   import BottomNav from '$lib/components/BottomNav.svelte';
+  import NowPlayingBar from '$lib/components/NowPlayingBar.svelte';
 
   const { children } = $props();
 
@@ -33,6 +36,15 @@
   // Native banner margin: lifted above the bottom nav on normal routes; pinned
   // to the bottom on the full-screen player (which has no nav).
   const bannerMargin = $derived(isFullScreen ? 0 : NAV_HEIGHT_PX);
+
+  // Persistent mini-player: shown on every normal route when something is
+  // playing. Tapping a sound/mix just plays it; the full player opens only by
+  // tapping this bar (so play never force-navigates).
+  const npIds = $derived(Object.keys($sounds));
+  const npCount = $derived(npIds.length);
+  const npNames = $derived(npIds.map((id) => getSound(id)?.name ?? id).join(' · '));
+  const npPlaying = $derived(npCount > 0 && !$soundsPaused);
+  const showNowPlaying = $derived(npCount > 0 && !isFullScreen);
 
   // Analytics: fire screen() on route change
   $effect(() => {
@@ -125,6 +137,23 @@
   </div>
 {/if}
 
+{#if showNowPlaying}
+  <!-- Persistent mini-player, above the ad card + nav. Tap it to open the full
+       player; the play/pause toggles in place. -->
+  <div
+    class="global-now-playing"
+    style="--np-bottom: calc({NAV_HEIGHT_PX}px + {showAds ? 'var(--wisp-ad-box-h)' : '0px'} + env(safe-area-inset-bottom, 0px))"
+  >
+    <NowPlayingBar
+      count={npCount}
+      names={npNames}
+      playing={npPlaying}
+      onOpen={() => goto('/now-playing')}
+      onTogglePlay={() => sounds.togglePlayback().catch(() => {})}
+    />
+  </div>
+{/if}
+
 {#if !isFullScreen}
   <div class="nav-bar">
     <BottomNav active={activeTab} />
@@ -150,6 +179,19 @@
      and its content can scroll up under the status bar. */
   .shell.full {
     --content-bottom: 0px;
+  }
+
+  /* Persistent mini-player, floating just above the ad card + nav on every
+     normal route. */
+  .global-now-playing {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--np-bottom) + 8px);
+    z-index: 95;
+    border: 1px solid rgba(124, 140, 240, 0.28);
+    border-radius: 18px;
+    overflow: hidden;
   }
 
   /* Menu sits at the very bottom; the native banner is anchored one nav-height up,
