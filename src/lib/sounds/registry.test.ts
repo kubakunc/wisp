@@ -70,4 +70,8 @@ describe('bundled metadata', () => {
   it('exposes file name on SoundDef', () => {
     expect(getSound('rain')?.file).toBe('rain.wav');
   });
+
+  it('carries the bare file name for bundled sounds too', () => {
+    expect(getSound('white-noise')?.file).toBe('white-noise.wav');
+  });
 });
