@@ -112,7 +112,11 @@ describe('audioEngine', () => {
     const engine = createAudioEngine(recording);
     await engine.play('rain');
     await engine.play('fan');
-    await engine.fadeOutAndPause(1000, 250, noSleep);
+    // Virtual clock: sleep(ms) advances it so the wall-clock-anchored fade is
+    // deterministic (a real clock + noSleep would spin until real time elapsed).
+    let t = 0;
+    const sleep = async (ms: number) => { t += ms; };
+    await engine.fadeOutAndPause(1000, 250, sleep, () => t);
     // Sources stay loaded + active (not torn down) so the mix can be resumed.
     expect(engine.activeIds().sort()).toEqual(['fan', 'rain']);
     expect(state.tracks.size).toBe(2);
@@ -141,8 +145,11 @@ describe('audioEngine', () => {
     };
     const engine = createAudioEngine(recording);
     await engine.play('rain'); // starts at volume 1
-    // 30s at the default 50ms step => 600 ramp steps (+1 restore). noSleep keeps it instant.
-    await engine.fadeOutAndPause(30_000, undefined, noSleep);
+    // Virtual clock advanced by sleep() so the wall-clock-anchored fade is
+    // deterministic: 30s at the default 50ms step => 600 ramp steps (+1 restore).
+    let t = 0;
+    const sleep = async (ms: number) => { t += ms; };
+    await engine.fadeOutAndPause(30_000, undefined, sleep, () => t);
     const steps = ramp.slice(0, -1); // drop the trailing restore-to-1
     expect(steps.length).toBe(600);
     expect(steps[steps.length - 1]).toBe(0);

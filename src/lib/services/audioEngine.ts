@@ -3,6 +3,7 @@ import { getSound } from '$lib/sounds/registry';
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 const realSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+const realNow = () => performance.now();
 
 /**
  * Wraps the native-audio plugin into a simple multi-source mixer.
@@ -92,13 +93,25 @@ export function createAudioEngine(audio: NativeAudioAdapter) {
      *  restore each volume so a later resume plays at the right level. Sources
      *  stay loaded — used by the sleep timer to stop playback WITHOUT removing
      *  the mix. */
-    async fadeOutAndPause(durationMs: number, stepMs = 50, sleep = realSleep): Promise<void> {
+    async fadeOutAndPause(
+      durationMs: number,
+      stepMs = 50,
+      sleep = realSleep,
+      now = realNow
+    ): Promise<void> {
       const ids = [...active.keys()];
-      const steps = Math.max(1, Math.floor(durationMs / stepMs));
       const starts = new Map(ids.map((id) => [id, active.get(id) ?? 1]));
-      for (let i = 1; i <= steps; i++) {
-        if (i > 1) await sleep(stepMs);
-        const factor = 1 - i / steps;
+      // Anchor the ramp to the WALL CLOCK, not a fixed step count: each native
+      // setVolume crosses the Capacitor bridge and costs a few ms, so a fixed
+      // 600-step loop drifted ~5s past the deadline (sound played after 0:00).
+      // Deriving volume from real elapsed time makes the fade finish in exactly
+      // durationMs regardless of per-call latency; the step count self-adjusts.
+      const start = now();
+      let elapsed = 0;
+      while (elapsed < durationMs) {
+        await sleep(stepMs);
+        elapsed = now() - start;
+        const factor = clamp01(1 - elapsed / durationMs);
         for (const id of ids) {
           await audio.setVolume(id, clamp01((starts.get(id) ?? 1) * factor));
         }
