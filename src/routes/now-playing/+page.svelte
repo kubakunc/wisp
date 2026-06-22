@@ -93,10 +93,13 @@
   function handleTimerChoose(kind: 'preset' | 'custom' | 'until', minutes = 0) {
     if (kind === 'until') {
       timer.startUntilStop();
-    } else if (kind === 'custom') {
-      timer.startCustom(minutes);
     } else {
-      timer.startPreset(minutes);
+      if (kind === 'custom') timer.startCustom(minutes);
+      else timer.startPreset(minutes);
+      // A timed countdown must only elapse while sound is actually playing. If
+      // playback is currently paused, freeze the timer immediately instead of
+      // letting it run down over silence — it resumes when playback resumes.
+      if ($soundsPaused) timer.pause();
     }
     analytics.track(WispEvent.timerStart, { mode: kind }).catch(() => {});
     sheetOpen = false;

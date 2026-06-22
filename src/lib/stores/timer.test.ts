@@ -88,6 +88,27 @@ describe('timer store', () => {
     expect(scheduled).toBeNull(); // fire was cancelled — won't run while paused
   });
 
+  it('starting a timer then immediately pausing (set while paused) freezes it at full duration and schedules nothing', () => {
+    // Regression: setting a sleep timer while playback is already paused must
+    // NOT let the countdown run over silence — the player freezes it on start.
+    let t = 1_000_000;
+    const { adapter } = createFakeNativeAudio();
+    const engine = createAudioEngine(adapter);
+    let scheduled: (() => void) | null = null;
+    const store = createTimerStore(engine, {
+      now: () => t,
+      setTimer: (cb) => { scheduled = cb; return 1; },
+      clearTimer: () => { scheduled = null; },
+      fadeMs: 0
+    });
+    store.startPreset(30); // endsAt = t + 1_800_000
+    store.pause(); // no time elapsed — set while paused
+    const s = get(store);
+    expect(s.endsAt).toBeNull();
+    expect(s.remainingMs).toBe(1_800_000); // full 30 min preserved
+    expect(scheduled).toBeNull(); // nothing will fire while paused
+  });
+
   it('resume reschedules for the frozen remaining and clears the paused state', () => {
     let t = 1_000_000;
     const { adapter } = createFakeNativeAudio();
