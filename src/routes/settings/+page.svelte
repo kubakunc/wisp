@@ -16,8 +16,12 @@
   });
 
   async function handleClear() {
-    await soundCache.clear().catch(() => {});
-    usage = 0;
+    try {
+      await soundCache.clear();
+      usage = 0;
+    } catch {
+      // platform call failed — leave usage unchanged
+    }
   }
 
   async function handleRestore() {
