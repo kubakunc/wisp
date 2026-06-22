@@ -157,4 +157,12 @@ describe('activeSounds store', () => {
     expect(state.tracks.get('rain')?.assetPath).toBe('file:///data/sounds/rain.wav');
     expect(get(store)).toEqual({ rain: 0.6 });
   });
+
+  it('toggle propagates a resolver rejection and does not mark the sound active', async () => {
+    const { adapter } = createFakeNativeAudio();
+    const engine = createAudioEngine(adapter);
+    const store = createActiveSoundsStore(engine, async () => { throw new Error('download failed'); });
+    await expect(store.toggle('rain')).rejects.toThrow('download failed');
+    expect(Object.keys(get(store))).not.toContain('rain');
+  });
 });
