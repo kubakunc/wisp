@@ -6,6 +6,7 @@ import { createFakePurchases } from '$lib/adapters/fakes/fakePurchases';
 import { createFakePreferences } from '$lib/adapters/fakes/fakePreferences';
 import { createFakeAnalytics } from '$lib/adapters/fakes/fakeAnalytics';
 import { createFakeAdMob } from '$lib/adapters/fakes/fakeAdMob';
+import { createFakeFilesystem } from '$lib/adapters/fakes/fakeFilesystem';
 
 function makeApp(startPremium = false) {
   return createApp({
@@ -14,6 +15,7 @@ function makeApp(startPremium = false) {
     preferences: createFakePreferences().adapter,
     analytics: createFakeAnalytics().adapter,
     admob: createFakeAdMob().adapter,
+    filesystem: createFakeFilesystem().adapter,
     timerDeps: { fadeMs: 0 }
   });
 }
@@ -40,5 +42,13 @@ describe('app composition root', () => {
     const s = get(app.ads);
     expect(s.consent).toBe('unknown');
     expect(s.bannerVisible).toBe(false);
+  });
+
+  it('exposes soundCache and downloads services wired to the filesystem dep', () => {
+    const app = makeApp();
+    expect(app.soundCache).toBeDefined();
+    expect(app.downloads).toBeDefined();
+    expect(typeof app.soundCache.resolveUri).toBe('function');
+    expect(typeof app.downloads.ensure).toBe('function');
   });
 });

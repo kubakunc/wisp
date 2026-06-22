@@ -3,17 +3,20 @@ import { purchasesAdapter, type PurchasesAdapter } from '$lib/adapters/purchases
 import { preferencesAdapter, type PreferencesAdapter } from '$lib/adapters/preferences';
 import { analyticsAdapter, type AnalyticsAdapter } from '$lib/adapters/analytics';
 import { admobAdapter, type AdMobAdapter } from '$lib/adapters/admob';
+import { filesystemAdapter, type FilesystemAdapter } from '$lib/adapters/filesystem';
 import { createAudioEngine } from '$lib/services/audioEngine';
 import { createStorageService } from '$lib/services/storageService';
 import { createSubscriptionService } from '$lib/services/subscriptionService';
 import { createAnalyticsService } from '$lib/services/analyticsService';
 import { createAdsService } from '$lib/services/adsService';
+import { createSoundCacheService } from '$lib/services/soundCacheService';
 import { NAV_HEIGHT_PX } from '$lib/ads/config';
 import { createActiveSoundsStore } from '$lib/stores/activeSounds';
 import { createSavedMixesStore } from '$lib/stores/savedMixes';
 import { createTimerStore, type TimerDeps } from '$lib/stores/timer';
 import { createSubscriptionStore } from '$lib/stores/subscription';
 import { createAdsStore } from '$lib/stores/ads';
+import { createDownloadsStore } from '$lib/stores/downloads';
 
 export interface AppDeps {
   audio?: NativeAudioAdapter;
@@ -21,6 +24,7 @@ export interface AppDeps {
   preferences?: PreferencesAdapter;
   analytics?: AnalyticsAdapter;
   admob?: AdMobAdapter;
+  filesystem?: FilesystemAdapter;
   timerDeps?: TimerDeps;
 }
 
@@ -31,6 +35,7 @@ export function createApp(deps: AppDeps = {}) {
   const analyticsAdapterImpl = deps.analytics ?? analyticsAdapter;
   const admobAdapterImpl = deps.admob ?? admobAdapter;
 
+  const filesystem = deps.filesystem ?? filesystemAdapter;
   const engine = createAudioEngine(audio);
   const storage = createStorageService(preferences);
   const subscriptionSvc = createSubscriptionService(purchases);
@@ -39,7 +44,9 @@ export function createApp(deps: AppDeps = {}) {
   // above the bottom menu (menu at the very bottom, banner above it).
   const adsSvc = createAdsService(admobAdapterImpl, { marginBottomPx: NAV_HEIGHT_PX });
 
-  const sounds = createActiveSoundsStore(engine);
+  const soundCache = createSoundCacheService(filesystem);
+  const downloads = createDownloadsStore(soundCache);
+  const sounds = createActiveSoundsStore(engine, (id) => downloads.ensure(id));
   const mixes = createSavedMixesStore(storage);
   // On timer EXPIRY (after the fade-out), clear the active-sounds store so the
   // UI reflects that playback stopped. Manual cancel must NOT stop sounds.
@@ -50,7 +57,7 @@ export function createApp(deps: AppDeps = {}) {
   const subscription = createSubscriptionStore(subscriptionSvc);
   const ads = createAdsStore(adsSvc);
 
-  return { engine, sounds, mixes, timer, subscription, analytics, ads };
+  return { engine, sounds, mixes, timer, subscription, analytics, ads, soundCache, downloads };
 }
 
 export const RC_API_KEY: string =

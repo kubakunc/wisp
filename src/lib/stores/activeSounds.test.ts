@@ -7,7 +7,7 @@ import { createFakeNativeAudio } from '$lib/adapters/fakes/fakeNativeAudio';
 function make() {
   const { adapter, state } = createFakeNativeAudio();
   const engine = createAudioEngine(adapter);
-  return { store: createActiveSoundsStore(engine), state };
+  return { store: createActiveSoundsStore(engine, async () => ''), state };
 }
 
 describe('activeSounds store', () => {
@@ -138,5 +138,23 @@ describe('activeSounds store', () => {
     await store.pauseAll();
     await store.stopAll();
     expect(get(store.paused)).toBe(false);
+  });
+
+  it('toggle resolves the uri and plays with it', async () => {
+    const { adapter, state } = createFakeNativeAudio();
+    const engine = createAudioEngine(adapter);
+    const store = createActiveSoundsStore(engine, async (id) => `file:///data/sounds/${id}.wav`);
+    await store.toggle('rain');
+    expect(state.tracks.get('rain')?.assetPath).toBe('file:///data/sounds/rain.wav');
+    expect(Object.keys(get(store))).toContain('rain');
+  });
+
+  it('applyMix resolves uri for each layer and plays with it', async () => {
+    const { adapter, state } = createFakeNativeAudio();
+    const engine = createAudioEngine(adapter);
+    const store = createActiveSoundsStore(engine, async (id) => `file:///data/sounds/${id}.wav`);
+    await store.applyMix({ id: 'm', name: 'x', layers: [{ soundId: 'rain', volume: 0.6 }] });
+    expect(state.tracks.get('rain')?.assetPath).toBe('file:///data/sounds/rain.wav');
+    expect(get(store)).toEqual({ rain: 0.6 });
   });
 });
