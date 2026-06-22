@@ -72,7 +72,9 @@
   let searchOpen = $state(false);
   let query = $state('');
 
-  // Sound list: filter by search, then float active sounds to the top
+  // Sound list: filter by search, then float the featured "free this week" sound
+  // to the very top (so it's seen without scrolling), then active sounds, then
+  // the rest.
   const activeSoundIds = $derived(Object.keys($sounds));
   const filteredSounds = $derived(
     query.trim()
@@ -80,8 +82,9 @@
       : SOUNDS
   );
   const sortedSounds = $derived([
-    ...filteredSounds.filter((s) => activeSoundIds.includes(s.id)),
-    ...filteredSounds.filter((s) => !activeSoundIds.includes(s.id))
+    ...filteredSounds.filter((s) => s.id === featured),
+    ...filteredSounds.filter((s) => s.id !== featured && activeSoundIds.includes(s.id)),
+    ...filteredSounds.filter((s) => s.id !== featured && !activeSoundIds.includes(s.id))
   ]);
 
   function toggleSearch() {
