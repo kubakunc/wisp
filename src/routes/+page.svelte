@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { app } from '$lib/app';
   import { SOUNDS, getSound, playableLayers } from '$lib/sounds/registry';
+  import { featuredSoundId } from '$lib/sounds/featured';
   import { phraseForDate } from '$lib/phrases';
   import { WispEvent } from '$lib/analytics/events';
   import SoundRow from '$lib/components/SoundRow.svelte';
@@ -10,6 +11,9 @@
 
   const { sounds, mixes, subscription, analytics, downloads, soundCache } = app;
   const { isPremium } = subscription;
+
+  // This week's free featured premium sound (free users only — premium owns all).
+  const featured = $derived($isPremium ? null : featuredSoundId());
 
   // Which non-bundled sounds are already on the device, so we can show whether a
   // tap will play instantly or download first. Bundled sounds are always local.
@@ -53,7 +57,7 @@
   function playHeroMix() {
     // Never play premium sounds on the free tier — route to the paywall instead
     // if the favourite mix is entirely premium; otherwise play the allowed subset.
-    const allowed = playableLayers(heroMix.layers, $isPremium);
+    const allowed = playableLayers(heroMix.layers, $isPremium, featured);
     if (allowed.length === 0) {
       analytics.track(WispEvent.paywallView, { source: 'hero_mix' }).catch(() => {});
       goto('/paywall');
@@ -87,8 +91,9 @@
 
   function handleSoundTap(soundId: string, tier: 'free' | 'premium') {
     const wasActive = activeSoundIds.includes(soundId);
-    // Active sounds can always be turned off; only ACTIVATING a premium sound is gated.
-    const locked = tier === 'premium' && !$isPremium && !wasActive;
+    // Active sounds can always be turned off; activating a premium sound is gated,
+    // EXCEPT this week's featured sound which is free.
+    const locked = tier === 'premium' && !$isPremium && !wasActive && soundId !== featured;
     if (locked) {
       analytics.track(WispEvent.paywallView, { source: 'sound_lock' }).catch(() => {});
       goto('/paywall');
@@ -176,11 +181,12 @@
         {sound}
         active={activeSoundIds.includes(sound.id)}
         volume={$sounds[sound.id] ?? 0}
-        locked={sound.tier === 'premium' && !$isPremium && !activeSoundIds.includes(sound.id)}
+        locked={sound.tier === 'premium' && !$isPremium && !activeSoundIds.includes(sound.id) && sound.id !== featured}
         downloading={$downloads[sound.id]?.status === 'downloading'}
         progress={$downloads[sound.id]?.progress ?? 0}
         error={$downloads[sound.id]?.status === 'error'}
         needsDownload={needsDownload(sound.id, sound.bundled)}
+        featured={sound.id === featured}
         onPrimary={() => handleSoundTap(sound.id, sound.tier)}
       />
     {:else}

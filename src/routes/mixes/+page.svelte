@@ -5,12 +5,16 @@
   import { WispEvent } from '$lib/analytics/events';
   import MixCard from '$lib/components/MixCard.svelte';
   import { playableLayers } from '$lib/sounds/registry';
+  import { featuredSoundId } from '$lib/sounds/featured';
   import { FREE_MIX_LIMIT } from '$lib/stores/savedMixes';
   import type { Mix } from '$lib/types';
 
   const { sounds, mixes, subscription, analytics } = app;
   const { isPremium } = subscription;
   const soundsPaused = sounds.paused;
+
+  // This week's free featured premium sound (free users only).
+  const featured = $derived($isPremium ? null : featuredSoundId());
 
   onMount(() => {
     mixes.load().catch(() => {});
@@ -40,7 +44,7 @@
   // Premium sounds in a mix that a free user can't play — they're dropped when
   // the mix launches (shown on the card so the exclusion is visible).
   function lockedSoundCount(mix: Mix): number {
-    return mix.layers.length - playableLayers(mix.layers, $isPremium).length;
+    return mix.layers.length - playableLayers(mix.layers, $isPremium, featured).length;
   }
 
   function handlePlay(mix: Mix, locked: boolean) {
@@ -58,7 +62,7 @@
     }
     // Otherwise load it. Free users can't play premium sounds — play the allowed
     // subset, or route to the paywall if the mix is entirely premium.
-    const allowed = playableLayers(mix.layers, $isPremium);
+    const allowed = playableLayers(mix.layers, $isPremium, featured);
     if (allowed.length === 0) {
       analytics.track(WispEvent.paywallView, { source: 'mix_premium' }).catch(() => {});
       goto('/paywall');
