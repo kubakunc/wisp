@@ -9,8 +9,9 @@
 
   const { children } = $props();
 
-  const { subscription, analytics, ads } = app;
+  const { sounds, timer, subscription, analytics, ads } = app;
   const { isPremium } = subscription;
+  const soundsPaused = sounds.paused;
 
   const pathname = $derived($page.url.pathname);
   const isFullScreen = $derived(pathname === '/now-playing' || pathname === '/paywall');
@@ -52,6 +53,17 @@
     } else {
       ads.sync(premium, margin).catch(() => {});
     }
+  });
+
+  // The sleep timer only counts down while a sound is actually playing: pause it
+  // when playback pauses, resume it when playback resumes, and turn it OFF when
+  // there are no active sounds (nothing to time).
+  $effect(() => {
+    const count = Object.keys($sounds).length;
+    const paused = $soundsPaused;
+    if (count === 0) timer.cancel();
+    else if (paused) timer.pause();
+    else timer.resume();
   });
 
   onMount(async () => {

@@ -42,23 +42,30 @@
     return () => clearInterval(id);
   });
 
+  // Remaining seconds: live from endsAt while running, or the frozen value while
+  // PAUSED (playback paused → timer paused, see layout).
   const remainingSec = $derived(
-    $timer.endsAt !== null ? Math.max(0, ($timer.endsAt - nowMs) / 1000) : 0
+    $timer.endsAt !== null ? Math.max(0, ($timer.endsAt - nowMs) / 1000)
+      : $timer.remainingMs !== null ? $timer.remainingMs / 1000
+      : 0
   );
 
-  // Ring: timed timer → remaining fraction (counts down); otherwise full + pulsing.
-  const timerCountingDown = $derived($timer.mode === 'preset' || $timer.mode === 'custom');
+  // A timed timer with a remaining value (running OR paused) shows a depleting
+  // ring; anything else (off / until-stop) shows a full, pulsing ring.
+  const hasTimedRemaining = $derived(
+    ($timer.mode === 'preset' || $timer.mode === 'custom') &&
+    ($timer.endsAt !== null || $timer.remainingMs !== null)
+  );
   const ringProgress = $derived(
-    timerCountingDown && $timer.endsAt !== null && $timer.durationSec
+    hasTimedRemaining && $timer.durationSec
       ? Math.max(0, Math.min(1, remainingSec / $timer.durationSec))
       : 1
   );
-  const ringPulse = $derived(!timerCountingDown);
+  const ringPulse = $derived(!hasTimedRemaining);
 
   const timerLabel = $derived(
-    $timer.mode === 'off' ? '' :
     $timer.mode === 'until-stop' ? '∞' :
-    $timer.endsAt !== null ? formatMinSec(Math.ceil(remainingSec)) : ''
+    hasTimedRemaining ? formatMinSec(Math.ceil(remainingSec)) : ''
   );
 
   function formatMinSec(sec: number): string {

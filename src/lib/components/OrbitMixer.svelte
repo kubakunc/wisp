@@ -156,9 +156,11 @@
     position: absolute;
     left: 50%;
     top: 50%;
-    transform: translate(-50%, -50%);
+    /* Centre with negative margins (NOT transform) so wispBreathe's
+       transform: scale() doesn't replace the centering and shift the glow. */
     width: 110px;
     height: 110px;
+    margin: -55px 0 0 -55px;
     border-radius: 50%;
     background: rgba(124, 140, 240, 0.2);
     pointer-events: none;

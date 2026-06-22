@@ -33,6 +33,9 @@ export interface TimerState {
   mode: TimerMode;
   /** total seconds for preset/custom; null for off/until-stop */
   durationSec: number | null;
-  /** epoch ms when the timer will fire; null if not running */
+  /** epoch ms when the timer will fire; null if off, until-stop, or PAUSED */
   endsAt: number | null;
+  /** frozen ms remaining while the timer is paused (playback paused); null when
+   *  running or off. The timer only counts down while a sound is playing. */
+  remainingMs: number | null;
 }

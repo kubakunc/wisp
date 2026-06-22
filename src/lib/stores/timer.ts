@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 import type { AudioEngine } from '$lib/services/audioEngine';
 import type { TimerState } from '$lib/types';
 
@@ -14,7 +14,7 @@ export interface TimerDeps {
   onExpire?: () => void;
 }
 
-const OFF: TimerState = { mode: 'off', durationSec: null, endsAt: null };
+const OFF: TimerState = { mode: 'off', durationSec: null, endsAt: null, remainingMs: null };
 
 export function createTimerStore(engine: AudioEngine, deps: TimerDeps = {}) {
   const now = deps.now ?? (() => performance.now());
@@ -23,18 +23,26 @@ export function createTimerStore(engine: AudioEngine, deps: TimerDeps = {}) {
   const fadeMs = deps.fadeMs ?? 10000;
   const onExpire = deps.onExpire;
 
-  const { subscribe, set } = writable<TimerState>({ ...OFF });
+  const store = writable<TimerState>({ ...OFF });
+  const { subscribe, set } = store;
   let handle: TimerHandle | null = null;
   let firing = false;
-  // Fade duration for the current run, clamped so it never exceeds the timer
-  // itself (a 10s custom timer can't have a 30s fade).
+  // Fade duration for the current run, clamped so it never exceeds the time
+  // remaining (a 10s remainder can't have a 30s fade).
   let runFadeMs = fadeMs;
+  const isTimed = (m: TimerState['mode']) => m === 'preset' || m === 'custom';
 
   function clear() {
     if (handle !== null) {
       clearTimer(handle);
       handle = null;
     }
+  }
+
+  // Schedule the fade so it COMPLETES at 0:00 (starts runFadeMs before the end).
+  function schedule(remainingMs: number) {
+    runFadeMs = Math.min(fadeMs, remainingMs);
+    handle = setTimer(() => fireNow(), Math.max(0, remainingMs - runFadeMs));
   }
 
   async function fireNow(): Promise<void> {
@@ -54,12 +62,8 @@ export function createTimerStore(engine: AudioEngine, deps: TimerDeps = {}) {
     clear();
     const durationSec = Math.round(minutes * 60);
     const totalMs = durationSec * 1000;
-    set({ mode, durationSec, endsAt: now() + totalMs });
-    // The fade happens over the LAST runFadeMs of the countdown, so playback is
-    // silent right at 0:00 (matching "fades gently over the last 10 seconds")
-    // rather than starting the fade after the timer already elapsed.
-    runFadeMs = Math.min(fadeMs, totalMs);
-    handle = setTimer(() => fireNow(), Math.max(0, totalMs - runFadeMs));
+    set({ mode, durationSec, endsAt: now() + totalMs, remainingMs: null });
+    schedule(totalMs);
   }
 
   return {
@@ -72,7 +76,25 @@ export function createTimerStore(engine: AudioEngine, deps: TimerDeps = {}) {
     },
     startUntilStop() {
       clear();
-      set({ mode: 'until-stop', durationSec: null, endsAt: null });
+      set({ mode: 'until-stop', durationSec: null, endsAt: null, remainingMs: null });
+    },
+    /** Pause the countdown (playback paused): freeze the remaining time and
+     *  cancel the scheduled fire. No-op unless a timed timer is actively running. */
+    pause() {
+      const s = get(store);
+      if (!isTimed(s.mode) || s.endsAt === null) return;
+      const remainingMs = Math.max(0, s.endsAt - now());
+      clear();
+      set({ ...s, endsAt: null, remainingMs });
+    },
+    /** Resume a paused countdown (playback resumed): reschedule for the frozen
+     *  remaining time. No-op unless a timed timer is currently paused. */
+    resume() {
+      const s = get(store);
+      if (!isTimed(s.mode) || s.remainingMs === null) return;
+      const remainingMs = s.remainingMs;
+      set({ ...s, endsAt: now() + remainingMs, remainingMs: null });
+      schedule(remainingMs);
     },
     cancel() {
       clear();

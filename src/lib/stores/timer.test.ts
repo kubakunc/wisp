@@ -64,7 +64,62 @@ describe('timer store', () => {
     const { store } = make();
     store.startPreset(15);
     store.cancel();
-    expect(get(store)).toEqual({ mode: 'off', durationSec: null, endsAt: null });
+    expect(get(store)).toEqual({ mode: 'off', durationSec: null, endsAt: null, remainingMs: null });
+  });
+
+  it('pause freezes the remaining time and cancels the scheduled fire', () => {
+    let t = 1_000_000;
+    const { adapter } = createFakeNativeAudio();
+    const engine = createAudioEngine(adapter);
+    let scheduled: (() => void) | null = null;
+    const store = createTimerStore(engine, {
+      now: () => t,
+      setTimer: (cb) => { scheduled = cb; return 1; },
+      clearTimer: () => { scheduled = null; },
+      fadeMs: 0
+    });
+    store.startPreset(15); // endsAt = t + 900_000
+    t += 300_000; // 5 min elapse
+    store.pause();
+    const s = get(store);
+    expect(s.endsAt).toBeNull();
+    expect(s.remainingMs).toBe(600_000); // 10 min left, frozen
+    expect(s.mode).toBe('preset');
+    expect(scheduled).toBeNull(); // fire was cancelled — won't run while paused
+  });
+
+  it('resume reschedules for the frozen remaining and clears the paused state', () => {
+    let t = 1_000_000;
+    const { adapter } = createFakeNativeAudio();
+    const engine = createAudioEngine(adapter);
+    let scheduledMs = -1;
+    const store = createTimerStore(engine, {
+      now: () => t,
+      setTimer: (_cb, ms) => { scheduledMs = ms; return 1; },
+      clearTimer: () => {},
+      fadeMs: 10_000
+    });
+    store.startPreset(15);
+    t += 300_000;
+    store.pause(); // 600_000 remaining
+    t += 999_999; // wall-clock moves while paused — must NOT affect the remainder
+    store.resume();
+    const s = get(store);
+    expect(s.remainingMs).toBeNull();
+    expect(s.endsAt).toBe(t + 600_000);
+    // rescheduled with the 10s fade landing at 0:00
+    expect(scheduledMs).toBe(600_000 - 10_000);
+  });
+
+  it('pause/resume are no-ops for until-stop and off', () => {
+    const { store } = make();
+    store.startUntilStop();
+    store.pause();
+    expect(get(store)).toMatchObject({ mode: 'until-stop', endsAt: null, remainingMs: null });
+    store.cancel();
+    store.pause();
+    store.resume();
+    expect(get(store).mode).toBe('off');
   });
 
   it('expiry fades out + pauses but KEEPS the mix loaded, and resets timer', async () => {
