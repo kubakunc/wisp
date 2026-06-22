@@ -6,6 +6,14 @@ describe('premium gating', () => {
     expect(isPlayable('rain', false)).toBe(true);
     expect(isPlayable('thunder', false)).toBe(false);
   });
+  it('a free user may play the featured premium sound, but not other premium sounds', () => {
+    expect(isPlayable('thunder', false, 'thunder')).toBe(true);
+    expect(isPlayable('blue-noise', false, 'thunder')).toBe(false);
+  });
+  it('playableLayers keeps the featured premium layer for a free user', () => {
+    const layers = [{ soundId: 'thunder', volume: 0.5 }, { soundId: 'blue-noise', volume: 0.5 }];
+    expect(playableLayers(layers, false, 'thunder').map((l) => l.soundId)).toEqual(['thunder']);
+  });
   it('premium users may play everything', () => {
     expect(isPlayable('thunder', true)).toBe(true);
   });

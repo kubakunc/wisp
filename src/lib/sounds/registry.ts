@@ -42,12 +42,16 @@ export function isBundled(soundId: string): boolean {
 }
 
 /** Whether a sound may be played given the user's entitlement (premium gates premium sounds). */
-export function isPlayable(soundId: string, isPremium: boolean): boolean {
+export function isPlayable(soundId: string, isPremium: boolean, featuredId?: string | null): boolean {
   const s = getSound(soundId);
-  return !!s && (isPremium || s.tier !== 'premium');
+  if (!s) return false;
+  return isPremium || s.tier !== 'premium' || soundId === featuredId;
 }
 
-/** Filter mix layers down to those the user is entitled to play. */
-export function playableLayers<T extends { soundId: string }>(layers: T[], isPremium: boolean): T[] {
-  return layers.filter((l) => isPlayable(l.soundId, isPremium));
+/** Filter mix layers down to those the user is entitled to play. A featured
+ *  sound (this week's free premium pick) counts as playable. */
+export function playableLayers<T extends { soundId: string }>(
+  layers: T[], isPremium: boolean, featuredId?: string | null
+): T[] {
+  return layers.filter((l) => isPlayable(l.soundId, isPremium, featuredId));
 }
