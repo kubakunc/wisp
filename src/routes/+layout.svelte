@@ -110,6 +110,7 @@
 <div
   class="shell"
   class:has-banner={showAds && !isFullScreen}
+  class:has-nowplaying={showNowPlaying}
   class:full={isFullScreen}
   style="--nav-h:{NAV_HEIGHT_PX}px; --banner-h:{BANNER_HEIGHT_PX}px"
 >
@@ -163,16 +164,22 @@
 <style>
   .shell {
     /* content reserves space for the nav at the very bottom (+ device safe-area),
-       plus the banner strip that sits directly above the nav when present.
-       --content-bottom is also read by floating UI like the now-playing bar. */
-    --content-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+       plus the banner strip that sits directly above the nav when present, plus
+       the floating now-playing bar (--np-h) when it's shown — otherwise the bar
+       covers the last list row. */
+    --np-h: 0px;
+    --content-bottom: calc(var(--nav-h) + var(--np-h) + env(safe-area-inset-bottom, 0px));
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
     padding-bottom: var(--content-bottom);
   }
   .shell.has-banner {
-    --content-bottom: calc(var(--nav-h) + var(--wisp-ad-box-h) + env(safe-area-inset-bottom, 0px));
+    --content-bottom: calc(var(--nav-h) + var(--wisp-ad-box-h) + var(--np-h) + env(safe-area-inset-bottom, 0px));
+  }
+  /* Now-playing bar height (~58px) + its 8px gap above the nav/ad, with margin. */
+  .shell.has-nowplaying {
+    --np-h: 74px;
   }
   /* Full-screen routes (now-playing, paywall) have no bottom nav/banner, so they
      must NOT reserve that space — otherwise the page gains phantom scroll height

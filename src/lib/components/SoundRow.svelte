@@ -101,12 +101,15 @@
     padding: 10px 12px;
     border-radius: var(--r-card);
     background: var(--surface);
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    /* Every tile keeps a clearly visible frame so adjacent tiles stay distinct. */
+    border: 1px solid rgba(255, 255, 255, 0.09);
   }
 
   .sound-row.active {
-    background: linear-gradient(160deg, #23284a, #1a1f3c);
-    border-color: rgba(124, 140, 240, 0.45);
+    background: linear-gradient(160deg, #2c3568, #20264c);
+    /* Bright, solid 1.5px accent frame — a low-alpha border vanished against the
+       gradient on the phone's AMOLED panel, so active tiles looked frameless. */
+    border: 1.5px solid #8e9cf7;
   }
 
   .row-btn {
