@@ -157,11 +157,6 @@
     goto('/');
   }
 
-  function cancelTimer() {
-    timer.cancel();
-    sheetOpen = false;
-  }
-
   const isPlaying = $derived(activeCount > 0 && !$soundsPaused);
 
   // Free users see the ad box at the bottom of the player too; reserve space so
@@ -345,9 +340,8 @@
 
   <TimerSheet
     open={sheetOpen}
-    active={$timer.mode !== 'off'}
+    mode={$timer.mode}
     onChoose={handleTimerChoose}
-    onCancel={cancelTimer}
     onClose={() => (sheetOpen = false)}
   />
 </div>

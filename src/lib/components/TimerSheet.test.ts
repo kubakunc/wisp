@@ -77,13 +77,30 @@ describe('TimerSheet', () => {
     expect(onChoose).toHaveBeenCalledWith('custom', 45);
   });
 
-  it('shows a "Turn off timer" button only when a timer is active', async () => {
-    const onCancel = vi.fn();
-    const { rerender } = render(TimerSheet, { ...base, active: false, onCancel });
+  it('has no separate "Turn off timer" button (the until-stop row is the off control)', () => {
+    render(TimerSheet, { ...base, mode: 'preset' });
     expect(screen.queryByRole('button', { name: 'Turn off timer' })).toBeFalsy();
-    await rerender({ ...base, active: true, onCancel });
-    await fireEvent.click(screen.getByRole('button', { name: 'Turn off timer' }));
-    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it('marks "Until I stop it" as selected when no timer is running (off/until-stop)', async () => {
+    const { rerender } = render(TimerSheet, { ...base, mode: 'off' });
+    const row = screen.getByText('Until I stop it').closest('button') as HTMLButtonElement;
+    expect(row.getAttribute('aria-pressed')).toBe('true');
+    await rerender({ ...base, mode: 'until-stop' });
+    expect(row.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('does not mark "Until I stop it" as selected while a timed timer runs', () => {
+    render(TimerSheet, { ...base, mode: 'preset' });
+    const row = screen.getByText('Until I stop it').closest('button') as HTMLButtonElement;
+    expect(row.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('tapping "Until I stop it" turns off a running timed timer (same until action)', async () => {
+    const onChoose = vi.fn();
+    render(TimerSheet, { ...base, mode: 'preset', onChoose });
+    await fireEvent.click(screen.getByText('Until I stop it'));
+    expect(onChoose).toHaveBeenCalledWith('until');
   });
 
   it('calls onClose when scrim clicked', async () => {

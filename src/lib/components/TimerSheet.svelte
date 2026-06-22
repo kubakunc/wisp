@@ -1,13 +1,18 @@
 <script lang="ts">
-  let { open, active = false, onChoose, onCancel, onClose }: {
+  let { open, mode = 'off', onChoose, onClose }: {
     open: boolean;
-    /** Whether a sleep timer is currently running (enables "Turn off timer"). */
-    active?: boolean;
+    /** Current sleep-timer mode — drives which option reads as selected. */
+    mode?: 'off' | 'until-stop' | 'preset' | 'custom';
     /** Start the chosen timer and close the sheet (no separate confirm step). */
     onChoose: (kind: 'preset' | 'custom' | 'until', minutes?: number) => void;
-    onCancel?: () => void;
     onClose: () => void;
   } = $props();
+
+  // "No timer" — playing until manually stopped — is a single state: both the
+  // default (off) and an explicit until-stop choice mean the same thing. So the
+  // "Until I stop it" row IS the off control; tapping it also clears a running
+  // timed timer. No separate "Turn off timer" button (it was the same action).
+  const noTimer = $derived(mode === 'off' || mode === 'until-stop');
 
   const PRESETS = [15, 30, 45, 60, 90] as const;
   const CUSTOM_DEFAULT = 20;
@@ -103,14 +108,23 @@
       </button>
     {/if}
 
-    <button class="until-row" onclick={() => onChoose('until')}>
+    <button
+      class="until-row"
+      class:until-selected={noTimer}
+      aria-pressed={noTimer}
+      onclick={() => onChoose('until')}
+    >
       <span class="until-icon" aria-hidden="true">∞</span>
-      Until I stop it
+      <span class="until-text">
+        Until I stop it
+        <span class="until-sub">No timer — plays until you stop it{noTimer ? '' : ' (turns the timer off)'}</span>
+      </span>
+      {#if noTimer}
+        <svg class="until-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      {/if}
     </button>
-
-    {#if active && onCancel}
-      <button class="turn-off" onclick={onCancel}>Turn off timer</button>
-    {/if}
   </div>
 {/if}
 
@@ -206,10 +220,33 @@
     font-family: var(--font-body);
   }
 
+  .until-selected {
+    background: var(--accent-grad);
+    border-color: transparent;
+    color: var(--on-accent);
+  }
+
   .until-icon {
     font-size: 18px;
     color: var(--muted);
+    flex-shrink: 0;
   }
+  .until-selected .until-icon { color: var(--on-accent); }
+
+  .until-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+  .until-sub {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .until-selected .until-sub { color: rgba(12, 18, 38, 0.7); }
+  .until-check { flex-shrink: 0; color: var(--on-accent); }
 
   .cta {
     width: 100%;
@@ -227,25 +264,6 @@
 
   .cta:hover {
     opacity: 0.88;
-  }
-
-  .turn-off {
-    width: 100%;
-    padding: 12px;
-    border-radius: var(--r-pill);
-    background: none;
-    border: none;
-    color: var(--muted);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: var(--font-body);
-    transition: color 0.15s;
-    margin-top: -8px;
-  }
-
-  .turn-off:hover {
-    color: #ff9b9b;
   }
 
   /* Custom duration stepper */
