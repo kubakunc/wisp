@@ -255,7 +255,9 @@ await check('paywall: close → leaves paywall', async () => {
 await check('hero mix: play → now-playing', async () => {
   await homeReset(); await inject();
   await page.evaluate(() => window.__t.clickSel('.hero-card'));
-  await sleep(1000);
+  // The default mix's first layer (rain) is a remote sound; on a cold cache
+  // applyMix downloads it before navigating, so allow time for the download.
+  await sleep(4500);
   const s = await st();
   return { pass: s.path === '/now-playing', path: s.path };
 });

@@ -35,6 +35,16 @@ export const filesystemAdapter: FilesystemAdapter = {
       handle = await Filesystem.addListener('progress', listener);
     }
     try {
+      // downloadFile does NOT create parent directories — ensure the target's
+      // parent exists first (e.g. the `sounds/` cache subdir), or the write
+      // fails with ENOENT.
+      const slash = relativePath.lastIndexOf('/');
+      if (slash > 0) {
+        const parent = relativePath.slice(0, slash);
+        try {
+          await Filesystem.mkdir({ path: parent, directory: Directory.Data, recursive: true });
+        } catch { /* already exists */ }
+      }
       const res = await Filesystem.downloadFile({ url, path: relativePath, directory: Directory.Data, progress: true });
       // DownloadFileResult.path is optional (undefined on web/when blob is returned instead).
       const uri = res.path ?? (await Filesystem.getUri({ path: relativePath, directory: Directory.Data })).uri;
