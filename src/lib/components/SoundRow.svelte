@@ -4,7 +4,7 @@
   import SoundIcon from './SoundIcon.svelte';
   import Toggle from './Toggle.svelte';
 
-  let { sound, active, volume = 0, locked, downloading = false, progress = 0, error = false, needsDownload = false, onPrimary }: {
+  let { sound, active, volume = 0, locked, downloading = false, progress = 0, error = false, needsDownload = false, featured = false, onPrimary }: {
     sound: SoundDef;
     active: boolean;
     volume?: number;
@@ -15,6 +15,8 @@
     error?: boolean;
     /** Not on the device yet — tapping will download it first (vs. instant play). */
     needsDownload?: boolean;
+    /** This week's free featured premium sound — highlight it as special. */
+    featured?: boolean;
     onPrimary: () => void;
   } = $props();
 </script>
@@ -24,6 +26,7 @@
   class:active
   class:locked
   class:error={error && !downloading}
+  class:featured
 >
   <button
     class="row-btn"
@@ -57,6 +60,9 @@
     </div>
     <div class="info">
       <span class="name">{sound.name}</span>
+      {#if featured}
+        <span class="featured-badge">✨ Free this week</span>
+      {/if}
       {#if locked}
         <span class="subtitle premium">Premium</span>
       {:else if downloading}
@@ -195,6 +201,26 @@
 
   .sound-row.error {
     border-color: rgba(255, 107, 107, 0.45);
+  }
+
+  /* This week's free featured premium sound — warm gold so it reads as special,
+     distinct from the blue accent and purple Premium styling. */
+  .sound-row.featured {
+    border-color: rgba(245, 196, 81, 0.55);
+    background: linear-gradient(160deg, rgba(245, 196, 81, 0.10), rgba(26, 31, 60, 0.6));
+  }
+  .featured-badge {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    margin-top: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #1a1206;
+    background: linear-gradient(135deg, #f5d77e, #e9b949);
+    padding: 2px 8px;
+    border-radius: 6px;
   }
 
   .dl-error-badge {

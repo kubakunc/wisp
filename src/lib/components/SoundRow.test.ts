@@ -120,6 +120,24 @@ describe('SoundRow', () => {
     expect(container.querySelector('.dl-cloud')).toBeFalsy();
   });
 
+  it('shows a "Free this week" badge + gold class when featured', () => {
+    const { container } = render(SoundRow, {
+      sound: { id: 'thunder', name: 'Thunder', category: 'nature', tier: 'premium', assetPath: 'sounds/thunder.wav', file: 'thunder.wav', bundled: false },
+      active: false, locked: false, featured: true, onPrimary: () => {}
+    });
+    expect(screen.getByText(/Free this week/i)).toBeTruthy();
+    expect(container.querySelector('.sound-row.featured')).toBeTruthy();
+  });
+
+  it('no featured badge when not featured', () => {
+    const { container } = render(SoundRow, {
+      sound: { id: 'thunder', name: 'Thunder', category: 'nature', tier: 'premium', assetPath: 'sounds/thunder.wav', file: 'thunder.wav', bundled: false },
+      active: false, locked: true, onPrimary: () => {}
+    });
+    expect(screen.queryByText(/Free this week/i)).toBeFalsy();
+    expect(container.querySelector('.sound-row.featured')).toBeFalsy();
+  });
+
   it('downloading state takes precedence over a prior error (retry in progress)', () => {
     const { container } = render(SoundRow, {
       sound: { id: 'rain', name: 'Rain', category: 'nature', tier: 'free', assetPath: 'sounds/rain.wav', file: 'rain.wav', bundled: false },
