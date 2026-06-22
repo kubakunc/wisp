@@ -129,6 +129,29 @@ describe('audioEngine', () => {
     }
   });
 
+  it('default fade uses many small steps so the volume drop is inaudible (no jumps)', async () => {
+    const { adapter } = createFakeNativeAudio();
+    const ramp: number[] = [];
+    const recording = {
+      ...adapter,
+      async setVolume(id: string, v: number) {
+        ramp.push(v);
+        await adapter.setVolume(id, v);
+      }
+    };
+    const engine = createAudioEngine(recording);
+    await engine.play('rain'); // starts at volume 1
+    // 30s at the default 50ms step => 600 ramp steps (+1 restore). noSleep keeps it instant.
+    await engine.fadeOutAndPause(30_000, undefined, noSleep);
+    const steps = ramp.slice(0, -1); // drop the trailing restore-to-1
+    expect(steps.length).toBe(600);
+    expect(steps[steps.length - 1]).toBe(0);
+    // Every consecutive drop is tiny (well under 1%), so no audible stepping.
+    for (let i = 1; i < steps.length; i++) {
+      expect(steps[i - 1] - steps[i]).toBeLessThan(0.01);
+    }
+  });
+
   it('never triggers an illegal owner-destroy (the fake throws if it would)', async () => {
     const { adapter } = createFakeNativeAudio();
     const engine = createAudioEngine(adapter);

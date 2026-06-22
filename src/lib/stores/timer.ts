@@ -20,7 +20,7 @@ export function createTimerStore(engine: AudioEngine, deps: TimerDeps = {}) {
   const now = deps.now ?? (() => performance.now());
   const setTimer = deps.setTimer ?? ((cb, ms) => setTimeout(cb, ms));
   const clearTimer = deps.clearTimer ?? ((h) => clearTimeout(h as ReturnType<typeof setTimeout>));
-  const fadeMs = deps.fadeMs ?? 10000;
+  const fadeMs = deps.fadeMs ?? 30000;
   const onExpire = deps.onExpire;
 
   const store = writable<TimerState>({ ...OFF });

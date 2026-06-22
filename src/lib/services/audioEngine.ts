@@ -92,7 +92,7 @@ export function createAudioEngine(audio: NativeAudioAdapter) {
      *  restore each volume so a later resume plays at the right level. Sources
      *  stay loaded — used by the sleep timer to stop playback WITHOUT removing
      *  the mix. */
-    async fadeOutAndPause(durationMs: number, stepMs = 500, sleep = realSleep): Promise<void> {
+    async fadeOutAndPause(durationMs: number, stepMs = 50, sleep = realSleep): Promise<void> {
       const ids = [...active.keys()];
       const steps = Math.max(1, Math.floor(durationMs / stepMs));
       const starts = new Map(ids.map((id) => [id, active.get(id) ?? 1]));
