@@ -87,19 +87,17 @@ Before you can build, complete the one-time native configuration described in [d
 
 ## Where to drop sound files
 
-The sound catalogue is a plain JSON config at **`src/lib/sounds/sounds.json`** — each entry has `id`, `name` (shown in the app), `category` (`noise`/`nature`, picks the icon), `premium` (Pro vs free), and `file` (the audio filename). Edit that file to add/rename sounds or change pricing. Drop the audio files in the **committed source location**:
+The sound catalogue is a plain JSON config at **`src/lib/sounds/sounds.json`** — each entry has `id`, `name` (shown in the app), `category` (`noise`/`nature`, picks the icon), `premium` (Pro vs free), `bundled` (ships in APK vs downloaded on first use), and `file` (the audio filename).
 
-```
-static/sounds/<file>            ← e.g. static/sounds/rain.mp3
-```
+**Bundled sounds** (`bundled: true` — currently white-noise, pink-noise, brown-noise) live in `static/sounds/` and are committed to the repo. They are copied into the APK via `npx cap sync android` and loaded via the `asset:///public/sounds/<file>` URI.
 
-After `npm run build && npx cap sync android` they are copied into `android/app/src/main/assets/public/sounds/` and loaded natively via the `asset:///public/sounds/<file>` URI (handled by the audio adapter). A sound whose file is missing simply won't play; the rest of the app is unaffected.
+**Remote sounds** (`bundled: false` — the other 29) are generated into the git-ignored `cdn-sounds/` directory. Upload `cdn-sounds/*` to the host behind `VITE_SOUND_CDN` and set that variable in your `.env` file (e.g. `VITE_SOUND_CDN=https://cdn.example.com/sounds`). If `VITE_SOUND_CDN` is unset, the app falls back to `static/` in dev so local development still works.
 
-**Naming:** the `file` in `sounds.json` must match the filename in `static/sounds/` exactly.
+**Regenerating:** run `node scripts/generate-sounds.mjs` — it routes bundled → `static/sounds/` and the rest → `cdn-sounds/`. After regenerating bundled sounds: `npm run build && npx cap sync android`.
 
-**All sounds ship as generated seamless-loop WAV files.** Run `node scripts/generate-sounds.mjs` to (re)create them in `static/sounds/`. The generator reads `sounds.json` and synthesizes one procedural, deterministic, royalty-free ambience per entry (noise colours, rain, ocean, fire, crickets, chimes, etc.) — not field recordings.
+**Naming:** the `file` in `sounds.json` must match the filename in the appropriate directory exactly. A sound whose file is missing simply won't play; the rest of the app is unaffected.
 
-**Swapping in a real recording:** drop the file in `static/sounds/` and point that catalogue entry's `file` at it. `generate-sounds.mjs` only (re)writes entries whose `file` ends in `.wav`, so an entry pointing at e.g. `rain.mp3` is left untouched. Real recordings should be CC0/royalty-free, loudness-normalized (~−14 LUFS), and loop-verified (seamless tail→head crossfade).
+**Swapping in a real recording:** drop the file in the appropriate directory and point that catalogue entry's `file` at it. `generate-sounds.mjs` only (re)writes entries whose `file` ends in `.wav`, so an entry pointing at e.g. `rain.mp3` is left untouched. Real recordings should be CC0/royalty-free, loudness-normalized (~−14 LUFS), and loop-verified (seamless tail→head crossfade).
 
 ---
 
