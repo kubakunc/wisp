@@ -48,7 +48,8 @@
     align-items: stretch;
     background: var(--surface);
     border-top: 1px solid rgba(255, 255, 255, 0.06);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* No env(safe-area-inset-bottom) padding: the native layer already insets the
+       WebView by the system nav-bar height. */
   }
 
   .nav-item {

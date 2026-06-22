@@ -142,7 +142,7 @@
        player; the play/pause toggles in place. -->
   <div
     class="global-now-playing"
-    style="--np-bottom: calc({NAV_HEIGHT_PX}px + {showAds ? 'var(--wisp-ad-box-h)' : '0px'} + env(safe-area-inset-bottom, 0px))"
+    style="--np-bottom: calc({NAV_HEIGHT_PX}px + {showAds ? 'var(--wisp-ad-box-h)' : '0px'})"
   >
     <NowPlayingBar
       count={npCount}
@@ -165,14 +165,17 @@
     /* content reserves space for the nav at the very bottom (+ device safe-area),
        plus the banner strip that sits directly above the nav when present.
        --content-bottom is also read by floating UI like the now-playing bar. */
-    --content-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+    /* The native layer (MainActivity) insets the WebView by the system nav-bar
+       height, so CSS must NOT add env(safe-area-inset-bottom) again — doing so
+       double-counted and left a big gap above the system bar. */
+    --content-bottom: var(--nav-h);
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
     padding-bottom: var(--content-bottom);
   }
   .shell.has-banner {
-    --content-bottom: calc(var(--nav-h) + var(--wisp-ad-box-h) + env(safe-area-inset-bottom, 0px));
+    --content-bottom: calc(var(--nav-h) + var(--wisp-ad-box-h));
   }
   /* Full-screen routes (now-playing, paywall) have no bottom nav/banner, so they
      must NOT reserve that space — otherwise the page gains phantom scroll height
@@ -212,7 +215,7 @@
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
-    bottom: calc(var(--ad-bottom, 0px) + env(safe-area-inset-bottom, 0px));
+    bottom: var(--ad-bottom, 0px);
     width: min(400px, 94%);
     height: var(--wisp-ad-box-h);
     z-index: 90;
