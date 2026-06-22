@@ -330,6 +330,11 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    /* Fill the card width and allow children to shrink, so the title/subtitle can
+       ellipsis instead of widening the content box. */
+    width: 100%;
+    min-width: 0;
+    align-items: flex-start;
   }
 
   .hero-eyebrow {
@@ -346,12 +351,24 @@
     color: var(--on-accent);
     margin-top: 4px;
     letter-spacing: -0.3px;
+    /* Long auto-named mixes (the joined sound list) must not wrap and blow out
+       the card height — clamp to one line. */
+    align-self: stretch;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .hero-layers {
     font-size: 13px;
     color: rgba(12, 18, 38, 0.7);
     font-weight: 500;
+    align-self: stretch;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .hero-pill {

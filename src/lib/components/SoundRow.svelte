@@ -59,10 +59,12 @@
       {/if}
     </div>
     <div class="info">
-      <span class="name">{sound.name}</span>
-      {#if featured}
-        <span class="featured-badge">✨ Free this week</span>
-      {/if}
+      <span class="name-row">
+        <span class="name">{sound.name}</span>
+        {#if featured}
+          <span class="featured-badge">✨ Free this week</span>
+        {/if}
+      </span>
       {#if locked}
         <span class="subtitle premium">Premium</span>
       {:else if downloading}
@@ -209,11 +211,22 @@
     border-color: rgba(245, 196, 81, 0.55);
     background: linear-gradient(160deg, rgba(245, 196, 81, 0.10), rgba(26, 31, 60, 0.6));
   }
+  .name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .name-row .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
   .featured-badge {
     display: inline-flex;
     align-items: center;
-    width: fit-content;
-    margin-top: 3px;
+    flex-shrink: 0;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.02em;
