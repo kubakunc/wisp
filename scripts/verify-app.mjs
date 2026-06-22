@@ -5,6 +5,13 @@
 //   adb -s emulator-5554 forward tcp:9222 localabstract:webview_devtools_remote_<pid>
 //
 // Usage: node scripts/verify-app.mjs
+//
+// Remote-download checks (remote sound + settings clear) require the app to be
+// built with VITE_SOUND_CDN pointing at a local static file server that serves
+// the cdn-sounds/ directory (the 29 remote WAVs are no longer in static/).
+// Example: npx serve cdn-sounds -l 8788  →  VITE_SOUND_CDN=http://10.0.2.2:8788
+// (10.0.2.2 is the Android emulator's alias for the host loopback interface.)
+// Build command: VITE_SOUND_CDN=http://10.0.2.2:8788 npm run build
 import { chromium } from 'playwright-core';
 
 const browser = await chromium.connectOverCDP('http://localhost:9222');
@@ -248,7 +255,9 @@ await check('paywall: close → leaves paywall', async () => {
 await check('hero mix: play → now-playing', async () => {
   await homeReset(); await inject();
   await page.evaluate(() => window.__t.clickSel('.hero-card'));
-  await sleep(1000);
+  // The default mix's first layer (rain) is a remote sound; on a cold cache
+  // applyMix downloads it before navigating, so allow time for the download.
+  await sleep(4500);
   const s = await st();
   return { pass: s.path === '/now-playing', path: s.path };
 });
@@ -350,6 +359,25 @@ await check('settings: upgrade → paywall', async () => {
   await sleep(600);
   const s = await st();
   return { pass: s.path === '/paywall', path: s.path };
+});
+
+// === REMOTE DOWNLOAD ========================================================
+await check('remote sound: tap downloads then plays', async () => {
+  await homeReset(); await inject();
+  await page.evaluate(() => window.__t.clickText('Ocean', 'button'));
+  await sleep(4000); // allow download
+  const s = await st();
+  return { pass: s.pressed.some((p) => p.includes('Ocean')) && s.npBar, pressed: s.pressed };
+});
+
+// === SETTINGS: CLEAR DOWNLOADED SOUNDS =====================================
+await check('settings: clear downloaded sounds', async () => {
+  await navByLink('Settings'); await sleep(300); await inject();
+  const had = await page.evaluate(() => /Downloaded sounds/.test(document.body.textContent));
+  await page.evaluate(() => window.__t.clickText('Clear', 'button'));
+  await sleep(600);
+  const zero = await page.evaluate(() => /0 MB/.test(document.body.textContent));
+  return { pass: had && zero, had, zero };
 });
 
 // clean up: return to a clean home via in-app nav

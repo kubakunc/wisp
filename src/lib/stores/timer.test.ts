@@ -4,22 +4,24 @@ import { createTimerStore } from './timer';
 import { createAudioEngine } from '$lib/services/audioEngine';
 import { createFakeNativeAudio } from '$lib/adapters/fakes/fakeNativeAudio';
 
-function make() {
+function make(fadeMs = 0) {
   const { adapter } = createFakeNativeAudio();
   const engine = createAudioEngine(adapter);
   let scheduled: (() => void) | null = null;
+  let scheduledMs = -1;
   const store = createTimerStore(engine, {
     now: () => 1_000_000,
-    setTimer: (cb) => {
+    setTimer: (cb, ms) => {
       scheduled = cb;
+      scheduledMs = ms;
       return 1;
     },
     clearTimer: () => {
       scheduled = null;
     },
-    fadeMs: 0
+    fadeMs
   });
-  return { engine, store, fire: () => scheduled?.() };
+  return { engine, store, fire: () => scheduled?.(), schedMs: () => scheduledMs };
 }
 
 describe('timer store', () => {
@@ -30,6 +32,20 @@ describe('timer store', () => {
     expect(s.mode).toBe('preset');
     expect(s.durationSec).toBe(1800);
     expect(s.endsAt).toBe(1_000_000 + 1800 * 1000);
+  });
+
+  it('schedules the fade so it completes at 0:00 (starts fadeMs before the end)', () => {
+    const { store, schedMs } = make(30_000); // 30s fade
+    store.startPreset(15); // 900s = 900_000ms
+    // fire is scheduled 30s before the end so the fade lands silence at 0:00
+    expect(schedMs()).toBe(900_000 - 30_000);
+  });
+
+  it('clamps the fade to the timer length for short custom timers', () => {
+    const { store, schedMs } = make(30_000);
+    store.startCustom(0.25); // 15s timer, shorter than the 30s fade
+    // fade can be at most the whole timer → fires immediately (delay 0)
+    expect(schedMs()).toBe(0);
   });
 
   it('until-stop has no end time', () => {

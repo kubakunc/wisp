@@ -134,4 +134,11 @@ describe('audioEngine', () => {
     await engine.stop('fan'); // teardown
     expect(engine.activeIds()).toEqual([]);
   });
+
+  it('play(soundId, uri) preloads with the given uri instead of the registry assetPath', async () => {
+    const { adapter, state } = createFakeNativeAudio();
+    const engine = createAudioEngine(adapter);
+    await engine.play('rain', 'file:///data/sounds/rain.wav');
+    expect(state.tracks.get('rain')?.assetPath).toBe('file:///data/sounds/rain.wav');
+  });
 });

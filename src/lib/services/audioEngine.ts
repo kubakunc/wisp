@@ -35,14 +35,14 @@ export function createAudioEngine(audio: NativeAudioAdapter) {
   }
 
   return {
-    async play(soundId: string): Promise<void> {
+    async play(soundId: string, assetPath = ''): Promise<void> {
       if (!created.has(soundId)) {
         const def = getSound(soundId);
         if (!def) throw new Error(`Unknown sound: ${soundId}`);
         const isOwner = ownerId === null;
         await audio.preload({
           audioId: def.id,
-          assetPath: def.assetPath,
+          assetPath: assetPath || def.assetPath,
           loop: true,
           useForNotification: isOwner,
           title: def.name,

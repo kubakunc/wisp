@@ -4,12 +4,14 @@ import catalogue from './sounds.json';
 /**
  * Raw shape of each entry in sounds.json (the editable catalogue config).
  * `file` is the audio filename under static/sounds/ ; `premium` true = Pro tier.
+ * `bundled` true = ships in app; false = downloaded from CDN.
  */
 interface SoundConfig {
   id: string;
   name: string;
   category: SoundCategory;
   premium: boolean;
+  bundled: boolean;
   file: string;
 }
 
@@ -21,7 +23,9 @@ export const SOUNDS: SoundDef[] = raw.map((s) => ({
   name: s.name,
   category: s.category,
   tier: s.premium ? 'premium' : 'free',
-  assetPath: `sounds/${s.file}`
+  assetPath: `sounds/${s.file}`,
+  bundled: s.bundled,
+  file: s.file
 }));
 
 export function getSound(id: string): SoundDef | undefined {
@@ -30,6 +34,11 @@ export function getSound(id: string): SoundDef | undefined {
 
 export function freeSounds(): SoundDef[] {
   return SOUNDS.filter((s) => s.tier === 'free');
+}
+
+/** Whether a sound is bundled (shipped in the app, not downloaded). */
+export function isBundled(soundId: string): boolean {
+  return getSound(soundId)?.bundled ?? false;
 }
 
 /** Whether a sound may be played given the user's entitlement (premium gates premium sounds). */

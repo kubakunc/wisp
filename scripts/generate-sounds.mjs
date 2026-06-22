@@ -402,22 +402,20 @@ function toWav(samples) {
 // ---- Drive from the catalogue ----------------------------------------------
 const catalogue = JSON.parse(readFileSync('src/lib/sounds/sounds.json', 'utf8')).sounds;
 mkdirSync('static/sounds', { recursive: true });
+mkdirSync('cdn-sounds', { recursive: true });
 
-let seed = 1;
-let written = 0;
+let seed = 1, written = 0;
 const missing = [];
 for (const s of catalogue) {
   seed++;
-  if (!s.file.endsWith('.wav')) continue; // only generate .wav targets
+  if (!s.file.endsWith('.wav')) continue;
   const recipe = RECIPES[s.id];
   if (!recipe) { missing.push(s.id); continue; }
   const wav = toWav(render(recipe, seed));
-  writeFileSync(`static/sounds/${s.file}`, wav);
+  const dir = s.bundled ? 'static/sounds' : 'cdn-sounds';
+  writeFileSync(`${dir}/${s.file}`, wav);
   written++;
-  console.log(`wrote static/sounds/${s.file} (${(wav.length / 1024).toFixed(0)} KB)`);
+  console.log(`wrote ${dir}/${s.file} (${(wav.length / 1024).toFixed(0)} KB)`);
 }
-if (missing.length) {
-  console.error(`\nNO RECIPE for: ${missing.join(', ')} — add one to RECIPES.`);
-  process.exit(1);
-}
-console.log(`\ndone — ${written} sounds`);
+if (missing.length) { console.error(`\nNO RECIPE for: ${missing.join(', ')}`); process.exit(1); }
+console.log(`\ndone — ${written} sounds (bundled → static/sounds, rest → cdn-sounds)`);

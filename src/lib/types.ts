@@ -8,6 +8,10 @@ export interface SoundDef {
   tier: Tier;
   /** Path to a bundled seamless-loop file. Real files dropped in later. */
   assetPath: string;
+  /** True if shipped in the app; false if downloaded from CDN. */
+  bundled: boolean;
+  /** Bare filename (e.g. 'rain.wav') for downloading from remote CDN. */
+  file: string;
 }
 
 export interface MixLayer {

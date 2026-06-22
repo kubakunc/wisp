@@ -8,7 +8,9 @@ const mockSound: SoundDef = {
   name: 'Rain',
   category: 'nature',
   tier: 'free',
-  assetPath: 'sounds/rain.mp3'
+  assetPath: 'sounds/rain.mp3',
+  bundled: false,
+  file: 'rain.mp3'
 };
 
 const premiumSound: SoundDef = {
@@ -16,7 +18,9 @@ const premiumSound: SoundDef = {
   name: 'Thunderstorm',
   category: 'nature',
   tier: 'premium',
-  assetPath: 'sounds/thunder.mp3'
+  assetPath: 'sounds/thunder.mp3',
+  bundled: false,
+  file: 'thunder.mp3'
 };
 
 describe('SoundRow', () => {
@@ -71,5 +75,21 @@ describe('SoundRow', () => {
   it('shows 100% when volume is 1 and active', () => {
     render(SoundRow, { sound: mockSound, active: true, volume: 1, locked: false, onPrimary: () => {} });
     expect(screen.getByText('On · 100%')).toBeTruthy();
+  });
+
+  it('shows a progress ring while downloading', () => {
+    const { container } = render(SoundRow, {
+      sound: { id: 'rain', name: 'Rain', category: 'nature', tier: 'free', assetPath: 'sounds/rain.wav', file: 'rain.wav', bundled: false },
+      active: false, locked: false, downloading: true, progress: 0.5, onPrimary: () => {}
+    });
+    expect(container.querySelector('.dl-ring')).toBeTruthy();
+  });
+
+  it('no ring when not downloading', () => {
+    const { container } = render(SoundRow, {
+      sound: { id: 'rain', name: 'Rain', category: 'nature', tier: 'free', assetPath: 'sounds/rain.wav', file: 'rain.wav', bundled: false },
+      active: false, locked: false, downloading: false, progress: 0, onPrimary: () => {}
+    });
+    expect(container.querySelector('.dl-ring')).toBeFalsy();
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SOUNDS, getSound, freeSounds, isPlayable, playableLayers } from './registry';
+import { SOUNDS, getSound, freeSounds, isPlayable, playableLayers, isBundled } from './registry';
 
 describe('premium gating', () => {
   it('free users may play free sounds but not premium', () => {
@@ -43,5 +43,35 @@ describe('sound registry', () => {
 
   it('returns undefined for unknown ids', () => {
     expect(getSound('nope')).toBeUndefined();
+  });
+});
+
+describe('bundled metadata', () => {
+  it('marks the 3 noise colors as bundled', () => {
+    expect(isBundled('white-noise')).toBe(true);
+    expect(isBundled('pink-noise')).toBe(true);
+    expect(isBundled('brown-noise')).toBe(true);
+  });
+
+  it('marks nature/premium sounds as not bundled', () => {
+    expect(isBundled('rain')).toBe(false);
+    expect(isBundled('thunder')).toBe(false);
+  });
+
+  it('exposes bundled on SoundDef', () => {
+    expect(getSound('white-noise')?.bundled).toBe(true);
+    expect(getSound('rain')?.bundled).toBe(false);
+  });
+
+  it('unknown id is not bundled', () => {
+    expect(isBundled('nope')).toBe(false);
+  });
+
+  it('exposes file name on SoundDef', () => {
+    expect(getSound('rain')?.file).toBe('rain.wav');
+  });
+
+  it('carries the bare file name for bundled sounds too', () => {
+    expect(getSound('white-noise')?.file).toBe('white-noise.wav');
   });
 });

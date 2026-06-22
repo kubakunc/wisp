@@ -2,7 +2,10 @@ import { writable, get } from 'svelte/store';
 import type { AudioEngine } from '$lib/services/audioEngine';
 import type { Mix, MixLayer } from '$lib/types';
 
-export function createActiveSoundsStore(engine: AudioEngine) {
+export function createActiveSoundsStore(
+  engine: AudioEngine,
+  resolveUri: (soundId: string) => Promise<string> = async () => ''
+) {
   const { subscribe, set, update } = writable<Record<string, number>>({});
   const { subscribe: subscribePaused, set: setPaused } = writable<boolean>(false);
 
@@ -57,7 +60,8 @@ export function createActiveSoundsStore(engine: AudioEngine) {
           setPaused(false);
         }
       } else {
-        await engine.play(soundId);
+        const uri = await resolveUri(soundId);
+        await engine.play(soundId, uri);
         update((s) => ({ ...s, [soundId]: 1 }));
         // A new sound starting should clear paused state
         setPaused(false);
@@ -76,7 +80,8 @@ export function createActiveSoundsStore(engine: AudioEngine) {
       await stopAll();
       const newState: Record<string, number> = {};
       for (const layer of mix.layers) {
-        await engine.play(layer.soundId);
+        const uri = await resolveUri(layer.soundId);
+        await engine.play(layer.soundId, uri);
         await engine.setVolume(layer.soundId, layer.volume);
         newState[layer.soundId] = layer.volume;
       }

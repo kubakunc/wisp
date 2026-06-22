@@ -1,11 +1,28 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { app } from '$lib/app';
   import { WispEvent } from '$lib/analytics/events';
+  import { formatBytes } from '$lib/format';
   import PremiumStatusCard from '$lib/components/PremiumStatusCard.svelte';
 
-  const { subscription, analytics } = app;
+  const { subscription, analytics, soundCache } = app;
   const { isPremium } = subscription;
+
+  let usage = $state(0);
+
+  onMount(() => {
+    soundCache.usageBytes().then((bytes) => { usage = bytes; }).catch(() => {});
+  });
+
+  async function handleClear() {
+    try {
+      await soundCache.clear();
+      usage = 0;
+    } catch {
+      // platform call failed — leave usage unchanged
+    }
+  }
 
   async function handleRestore() {
     try {
@@ -34,6 +51,19 @@
 
   <!-- Settings rows -->
   <div class="rows-section">
+    <div class="settings-row info-row sound-cache-row" role="note">
+      <div class="row-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      <span class="row-label">Downloaded sounds</span>
+      <span class="row-usage">{formatBytes(usage)}</span>
+      <button class="clear-btn" onclick={handleClear}>Clear</button>
+    </div>
+
     <button class="settings-row" onclick={handleRestore}>
       <div class="row-icon">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -209,5 +239,36 @@
 
   .link-row {
     text-decoration: none;
+  }
+
+  .sound-cache-row {
+    cursor: default;
+  }
+
+  .sound-cache-row:hover {
+    background: none;
+  }
+
+  .row-usage {
+    font-size: 13px;
+    color: var(--muted);
+    margin-left: auto;
+    margin-right: 10px;
+  }
+
+  .clear-btn {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-1);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    font-family: var(--font-body);
+    flex-shrink: 0;
+  }
+
+  .clear-btn:hover {
+    opacity: 0.8;
   }
 </style>
