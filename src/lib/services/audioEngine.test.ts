@@ -99,7 +99,7 @@ describe('audioEngine', () => {
     expect(engine.activeIds()).toEqual([]);
   });
 
-  it('fadeOutAll ramps every volume down to 0 then tears everything down', async () => {
+  it('fadeOutAndPause ramps volume to 0, then pauses and restores volume (sources kept)', async () => {
     const { adapter, state } = createFakeNativeAudio();
     const vols: Record<string, number[]> = {};
     const recording = {
@@ -112,14 +112,20 @@ describe('audioEngine', () => {
     const engine = createAudioEngine(recording);
     await engine.play('rain');
     await engine.play('fan');
-    await engine.fadeOutAll(1000, 250, noSleep);
-    expect(engine.activeIds()).toEqual([]);
-    expect(state.tracks.size).toBe(0);
+    await engine.fadeOutAndPause(1000, 250, noSleep);
+    // Sources stay loaded + active (not torn down) so the mix can be resumed.
+    expect(engine.activeIds().sort()).toEqual(['fan', 'rain']);
+    expect(state.tracks.size).toBe(2);
     for (const id of ['rain', 'fan']) {
+      const t = state.tracks.get(id)!;
+      expect(t.playing).toBe(false); // paused
+      expect(t.volume).toBe(1); // volume restored for a clean resume
       const seq = vols[id];
-      expect(seq.length).toBe(4);
-      expect(seq[seq.length - 1]).toBe(0);
-      for (let i = 1; i < seq.length; i++) expect(seq[i]).toBeLessThan(seq[i - 1]);
+      // 4 ramp steps down to 0, then 1 restore step back to the original volume
+      expect(seq.length).toBe(5);
+      expect(seq[3]).toBe(0);
+      for (let i = 1; i < 4; i++) expect(seq[i]).toBeLessThan(seq[i - 1]);
+      expect(seq[4]).toBe(1);
     }
   });
 

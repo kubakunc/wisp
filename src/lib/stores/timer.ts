@@ -20,7 +20,7 @@ export function createTimerStore(engine: AudioEngine, deps: TimerDeps = {}) {
   const now = deps.now ?? (() => performance.now());
   const setTimer = deps.setTimer ?? ((cb, ms) => setTimeout(cb, ms));
   const clearTimer = deps.clearTimer ?? ((h) => clearTimeout(h as ReturnType<typeof setTimeout>));
-  const fadeMs = deps.fadeMs ?? 30000;
+  const fadeMs = deps.fadeMs ?? 10000;
   const onExpire = deps.onExpire;
 
   const { subscribe, set } = writable<TimerState>({ ...OFF });
@@ -42,7 +42,7 @@ export function createTimerStore(engine: AudioEngine, deps: TimerDeps = {}) {
     firing = true;
     try {
       clear();
-      await engine.fadeOutAll(runFadeMs);
+      await engine.fadeOutAndPause(runFadeMs);
       set({ ...OFF });
       onExpire?.();
     } finally {
@@ -56,8 +56,8 @@ export function createTimerStore(engine: AudioEngine, deps: TimerDeps = {}) {
     const totalMs = durationSec * 1000;
     set({ mode, durationSec, endsAt: now() + totalMs });
     // The fade happens over the LAST runFadeMs of the countdown, so playback is
-    // silent right at 0:00 (matching "fades gently over the last 30 seconds")
-    // rather than starting a 30s fade after the timer already elapsed.
+    // silent right at 0:00 (matching "fades gently over the last 10 seconds")
+    // rather than starting the fade after the timer already elapsed.
     runFadeMs = Math.min(fadeMs, totalMs);
     handle = setTimer(() => fireNow(), Math.max(0, totalMs - runFadeMs));
   }

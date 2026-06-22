@@ -48,11 +48,12 @@ export function createApp(deps: AppDeps = {}) {
   const downloads = createDownloadsStore(soundCache);
   const sounds = createActiveSoundsStore(engine, (id) => downloads.ensure(id));
   const mixes = createSavedMixesStore(storage);
-  // On timer EXPIRY (after the fade-out), clear the active-sounds store so the
-  // UI reflects that playback stopped. Manual cancel must NOT stop sounds.
+  // On timer EXPIRY (after the fade-out) PAUSE the mix — keep the sounds loaded
+  // so the user can resume; the engine already faded + paused them, this syncs
+  // the store's paused state. Manual cancel must NOT affect playback.
   const timer = createTimerStore(engine, {
     ...deps.timerDeps,
-    onExpire: deps.timerDeps?.onExpire ?? (() => void sounds.stopAll().catch(() => {}))
+    onExpire: deps.timerDeps?.onExpire ?? (() => void sounds.pauseAll().catch(() => {}))
   });
   const subscription = createSubscriptionStore(subscriptionSvc);
   const ads = createAdsStore(adsSvc);

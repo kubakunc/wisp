@@ -88,7 +88,11 @@ export function createAudioEngine(audio: NativeAudioAdapter) {
     activeIds(): string[] {
       return [...active.keys()];
     },
-    async fadeOutAll(durationMs: number, stepMs = 500, sleep = realSleep): Promise<void> {
+    /** Fade every active source to silence over durationMs, then PAUSE them and
+     *  restore each volume so a later resume plays at the right level. Sources
+     *  stay loaded — used by the sleep timer to stop playback WITHOUT removing
+     *  the mix. */
+    async fadeOutAndPause(durationMs: number, stepMs = 500, sleep = realSleep): Promise<void> {
       const ids = [...active.keys()];
       const steps = Math.max(1, Math.floor(durationMs / stepMs));
       const starts = new Map(ids.map((id) => [id, active.get(id) ?? 1]));
@@ -99,7 +103,12 @@ export function createAudioEngine(audio: NativeAudioAdapter) {
           await audio.setVolume(id, clamp01((starts.get(id) ?? 1) * factor));
         }
       }
-      await teardownAll();
+      // Keep sources loaded: pause each and restore its pre-fade volume so the
+      // mix can be resumed at the right level.
+      for (const id of ids) {
+        await audio.pause(id);
+        await audio.setVolume(id, starts.get(id) ?? 1);
+      }
     }
   };
 }

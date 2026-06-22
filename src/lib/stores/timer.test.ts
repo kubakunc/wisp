@@ -67,21 +67,22 @@ describe('timer store', () => {
     expect(get(store)).toEqual({ mode: 'off', durationSec: null, endsAt: null });
   });
 
-  it('expiry fades out audio and resets', async () => {
+  it('expiry fades out + pauses but KEEPS the mix loaded, and resets timer', async () => {
     const { engine, store } = make();
     await engine.play('rain');
     store.startPreset(15);
     await store.fireNow();
-    expect(engine.activeIds()).toEqual([]);
+    // Sound is kept (paused), not torn down — the user can resume.
+    expect(engine.activeIds()).toEqual(['rain']);
     expect(get(store).mode).toBe('off');
   });
 
-  it('scheduled callback triggers fade', async () => {
+  it('scheduled callback triggers the fade-and-pause', async () => {
     const { engine, store, fire } = make();
     await engine.play('rain');
     store.startPreset(15);
     await fire();
-    expect(engine.activeIds()).toEqual([]);
+    expect(engine.activeIds()).toEqual(['rain']);
   });
 
   it('concurrent fireNow calls fade audio only once', async () => {
@@ -89,14 +90,14 @@ describe('timer store', () => {
     await engine.play('rain');
     store.startPreset(15);
     let fadeCount = 0;
-    const originalFadeOutAll = engine.fadeOutAll.bind(engine);
-    engine.fadeOutAll = async (ms: number) => {
+    const originalFade = engine.fadeOutAndPause.bind(engine);
+    engine.fadeOutAndPause = async (ms: number) => {
       fadeCount++;
-      await originalFadeOutAll(ms);
+      await originalFade(ms);
     };
     await Promise.all([store.fireNow(), store.fireNow()]);
     expect(fadeCount).toBe(1);
-    expect(engine.activeIds()).toEqual([]);
+    expect(engine.activeIds()).toEqual(['rain']);
     expect(get(store).mode).toBe('off');
   });
 

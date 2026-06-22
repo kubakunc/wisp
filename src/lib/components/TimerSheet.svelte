@@ -52,7 +52,7 @@
     <div class="handle" aria-hidden="true"></div>
 
     <h2 class="sheet-title">Sleep timer</h2>
-    <p class="explainer">Sound fades out gently over the last 30 seconds — you won't wake to silence cutting off.</p>
+    <p class="explainer">Sound fades out gently over the last 10 seconds, then pauses — you won't wake to silence cutting off.</p>
 
     <div class="preset-grid">
       {#each PRESETS as preset}
