@@ -10,6 +10,11 @@ function make(opts?: Parameters<typeof createFakeFilesystem>[0]) {
 }
 
 describe('downloads store', () => {
+  it('stateOf returns the idle default for an untouched sound', () => {
+    const s = make();
+    expect(s.stateOf('never-touched')).toEqual({ status: 'idle', progress: 0 });
+  });
+
   it('bundled sound becomes ready immediately', async () => {
     const s = make();
     const uri = await s.ensure('white-noise');

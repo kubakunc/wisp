@@ -9,13 +9,6 @@
 
   const { subscription, analytics } = app;
 
-  // Shown when RevenueCat has no live offerings yet (e.g. no API key configured).
-  // Keeps the cards selectable + priced; a real purchase requires billing config.
-  const FALLBACK_PACKAGES: PackageLite[] = [
-    { identifier: 'fallback_annual', productId: 'wisp_premium_annual', priceString: '$39.99', packageType: 'ANNUAL' },
-    { identifier: 'fallback_monthly', productId: 'wisp_premium_monthly', priceString: '$6.99', packageType: 'MONTHLY' }
-  ];
-
   let packages = $state<PackageLite[]>([]);
   let selectedPkg = $state<PackageLite | null>(null);
   let loading = $state(true);
@@ -24,14 +17,16 @@
 
   const annualPkg = $derived(packages.find((p) => p.packageType === 'ANNUAL') ?? null);
   const monthlyPkg = $derived(packages.find((p) => p.packageType === 'MONTHLY') ?? null);
+  // No live offerings (no RevenueCat key, or no offering configured yet). We
+  // only ever show REAL, purchasable packages — never fake placeholder cards.
+  const unavailable = $derived(!loading && packages.length === 0);
 
   onMount(async () => {
     analytics.track(WispEvent.paywallView).catch(() => {});
     try {
-      const offerings = await subscription.listPackages();
-      packages = offerings.length > 0 ? offerings : FALLBACK_PACKAGES;
+      packages = await subscription.listPackages();
     } catch {
-      packages = FALLBACK_PACKAGES;
+      packages = [];
     } finally {
       selectedPkg = packages.find((p) => p.packageType === 'ANNUAL') ?? packages[0] ?? null;
       loading = false;
@@ -52,7 +47,7 @@
         analytics.track(WispEvent.purchase, { pkg_id: selectedPkg.identifier }).catch(() => {});
         goto('/');
       } else {
-        notice = 'Subscriptions aren’t available in this build yet. Add a RevenueCat key to enable purchases.';
+        notice = 'Purchase wasn’t completed.';
       }
     } catch {
       notice = 'Purchase could not be completed. Please try again.';
@@ -113,7 +108,13 @@
   </ul>
 
   <!-- Package cards -->
-  {#if !loading}
+  {#if loading}
+    <div class="packages-loading" aria-live="polite">Loading plans…</div>
+  {:else if unavailable}
+    <div class="packages-loading" aria-live="polite">
+      Plans are temporarily unavailable. Please check your connection and try again.
+    </div>
+  {:else}
     <div class="packages">
       {#if annualPkg}
         <PackageCard
@@ -130,14 +131,14 @@
         />
       {/if}
     </div>
-  {:else}
-    <div class="packages-loading" aria-live="polite">Loading plans…</div>
   {/if}
 
-  <!-- CTA -->
-  <button class="cta-btn" onclick={handleBuy} disabled={!selectedPkg || buying} aria-busy={buying}>
-    {buying ? 'Processing…' : 'Start 7-day free trial'}
-  </button>
+  <!-- CTA (only when real plans are available) -->
+  {#if !unavailable}
+    <button class="cta-btn" onclick={handleBuy} disabled={!selectedPkg || buying} aria-busy={buying}>
+      {buying ? 'Processing…' : 'Start 7-day free trial'}
+    </button>
+  {/if}
 
   {#if notice}
     <p class="paywall-notice" role="alert">{notice}</p>

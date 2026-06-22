@@ -1,7 +1,11 @@
 import type { PurchasesAdapter, PackageLite, CustomerInfoLite } from '$lib/adapters/purchases';
-import { PREMIUM_ENTITLEMENT } from '$lib/adapters/purchases';
 
-const hasPremium = (info: CustomerInfoLite) => info.entitlements.includes(PREMIUM_ENTITLEMENT);
+// Wisp has a single paid tier, so ANY active RevenueCat entitlement means
+// premium. This is intentionally name-agnostic — it works whether the
+// entitlement is configured as `premium`, `Wisp Premium`, etc. (the adapter
+// only ever returns ACTIVE entitlements). Add per-entitlement checks here only
+// if multiple tiers are introduced.
+const hasPremium = (info: CustomerInfoLite) => info.entitlements.length > 0;
 
 export function createSubscriptionService(purchases: PurchasesAdapter) {
   // RevenueCat's native configure() throws (and hard-crashes the app on its own

@@ -6,9 +6,8 @@
 import { Purchases, PACKAGE_TYPE } from '@revenuecat/purchases-capacitor';
 import type { PurchasesPackage, PurchasesEntitlementInfos } from '@revenuecat/purchases-capacitor';
 
-export const PREMIUM_ENTITLEMENT = 'premium';
-
 export interface CustomerInfoLite {
+  /** Identifiers of the user's currently ACTIVE entitlements (any = premium). */
   entitlements: string[];
 }
 export interface PackageLite {
