@@ -66,6 +66,35 @@ describe('MixCard', () => {
     expect(btn.getAttribute('aria-pressed')).toBe('false');
   });
 
+  it('locked mix shows a PRO badge, an upgrade note, and a lock action (no play)', async () => {
+    const onPlay = vi.fn();
+    render(MixCard, { mix, playing: false, locked: true, onPlay, onDelete: () => {} });
+    expect(screen.getByText('PRO')).toBeTruthy();
+    expect(screen.getByText(/upgrade to use this mix/i)).toBeTruthy();
+    // No play/pause button — only the unlock action.
+    expect(screen.queryByRole('button', { name: /Play Rain, Ocean/ })).toBeFalsy();
+    const unlock = screen.getByRole('button', { name: /Unlock .* with Premium/i });
+    await fireEvent.click(unlock);
+    expect(onPlay).toHaveBeenCalledOnce();
+  });
+
+  it('shows how many Premium sounds will be excluded on a playable mix', () => {
+    render(MixCard, { mix, playing: false, locked: false, lockedSoundCount: 1, onPlay: () => {}, onDelete: () => {} });
+    expect(screen.getByText(/2 sounds · 1 Premium won’t play/)).toBeTruthy();
+  });
+
+  it('uses the singular "sound" in the premium-excluded hint for a 1-layer mix', () => {
+    const single: Mix = { id: 's', name: 'x', layers: [{ soundId: 'rain', volume: 0.5 }] };
+    render(MixCard, { mix: single, playing: false, lockedSoundCount: 1, onPlay: () => {}, onDelete: () => {} });
+    expect(screen.getByText(/^1 sound · 1 Premium won’t play$/)).toBeTruthy();
+  });
+
+  it('falls back to the raw id when a layer sound is unknown', () => {
+    const ghost: Mix = { id: 'g', name: 'x', layers: [{ soundId: 'mystery', volume: 0.5 }] };
+    render(MixCard, { mix: ghost, playing: false, onPlay: () => {}, onDelete: () => {} });
+    expect(screen.getByText('mystery')).toBeTruthy();
+  });
+
   it('shows PLAYING label when playing', () => {
     render(MixCard, { mix, playing: true, onPlay: () => {}, onDelete: () => {} });
     expect(screen.getByText('PLAYING')).toBeTruthy();

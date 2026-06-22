@@ -5,6 +5,7 @@
   import { WispEvent } from '$lib/analytics/events';
   import MixCard from '$lib/components/MixCard.svelte';
   import { playableLayers } from '$lib/sounds/registry';
+  import { FREE_MIX_LIMIT } from '$lib/stores/savedMixes';
   import type { Mix } from '$lib/types';
 
   const { sounds, mixes, subscription, analytics } = app;
@@ -30,7 +31,25 @@
     return activeMatches(mix) && !$soundsPaused;
   }
 
-  function handlePlay(mix: Mix) {
+  // When premium lapses, only the first FREE_MIX_LIMIT saved mixes stay usable;
+  // the rest are kept but locked behind Premium (visible, not clickable).
+  function isLocked(index: number): boolean {
+    return !$isPremium && index >= FREE_MIX_LIMIT;
+  }
+
+  // Premium sounds in a mix that a free user can't play — they're dropped when
+  // the mix launches (shown on the card so the exclusion is visible).
+  function lockedSoundCount(mix: Mix): number {
+    return mix.layers.length - playableLayers(mix.layers, $isPremium).length;
+  }
+
+  function handlePlay(mix: Mix, locked: boolean) {
+    // Over the free limit → can't launch; send to the paywall instead.
+    if (locked) {
+      analytics.track(WispEvent.paywallView, { source: 'mix_over_limit' }).catch(() => {});
+      goto('/paywall');
+      return;
+    }
     // If this mix is already loaded, the button toggles pause/resume in place
     // (no navigation) so its play/pause icon actually controls playback.
     if (activeMatches(mix)) {
@@ -57,20 +76,25 @@
   }
 
   const mixCount = $derived($mixes.length);
+  const lockedCount = $derived($mixes.filter((_, i) => isLocked(i)).length);
 </script>
 
 <div class="mixes-page">
   <header class="header">
     <h1 class="page-title">Your mixes</h1>
-    <p class="subtitle">{mixCount} saved · tap to launch</p>
+    <p class="subtitle">
+      {mixCount} saved · {lockedCount > 0 ? `${lockedCount} locked (Premium)` : 'tap to launch'}
+    </p>
   </header>
 
   <section class="mix-list" aria-label="Saved mixes">
-    {#each $mixes as mix (mix.id)}
+    {#each $mixes as mix, i (mix.id)}
       <MixCard
         {mix}
         playing={isPlaying(mix)}
-        onPlay={() => handlePlay(mix)}
+        locked={isLocked(i)}
+        lockedSoundCount={isLocked(i) ? 0 : lockedSoundCount(mix)}
+        onPlay={() => handlePlay(mix, isLocked(i))}
         onDelete={() => handleDelete(mix.id)}
       />
     {:else}
