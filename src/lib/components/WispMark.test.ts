@@ -16,16 +16,16 @@ describe('WispMark', () => {
     expect(el.style.height).toBe('60px');
   });
 
-  it('border-radius is proportional to size (size * 0.3)', () => {
+  it('border-radius matches the icon tile (size * 0.225)', () => {
     const { container } = render(WispMark, { size: 40 });
     const el = container.querySelector('.wisp-mark') as HTMLElement;
-    expect(el.style.borderRadius).toBe('12px'); // 40 * 0.3
+    expect(el.style.borderRadius).toBe('9px'); // 40 * 0.225
   });
 
   it('border-radius scales proportionally for large size', () => {
-    const { container } = render(WispMark, { size: 100 });
+    const { container } = render(WispMark, { size: 200 });
     const el = container.querySelector('.wisp-mark') as HTMLElement;
-    expect(el.style.borderRadius).toBe('30px'); // 100 * 0.3
+    expect(el.style.borderRadius).toBe('45px'); // 200 * 0.225
   });
 
   it('renders the night-sky gradient background + moon gradient defs', () => {
@@ -43,6 +43,6 @@ describe('WispMark', () => {
   it('renders the crescent-moon SVG path inside', () => {
     const { container } = render(WispMark);
     const paths = [...container.querySelectorAll('svg path')].map((p) => p.getAttribute('d') ?? '');
-    expect(paths.some((d) => d.includes('M19 12.5'))).toBe(true);
+    expect(paths.some((d) => d.includes('M21 12.79'))).toBe(true);
   });
 });

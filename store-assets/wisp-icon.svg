@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="wispBg" cx="70%" cy="0%" r="115%">
+      <stop offset="0%" stop-color="#2a2f5e"></stop>
+      <stop offset="65%" stop-color="#0a0e1c"></stop>
+      <stop offset="100%" stop-color="#070a16"></stop>
+    </radialGradient>
+    <linearGradient id="wispMoon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b9af5"></stop>
+      <stop offset="100%" stop-color="#c6a6f5"></stop>
+    </linearGradient>
+    <clipPath id="wispTile">
+      <rect x="0" y="0" width="512" height="512" rx="115" ry="115"></rect>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#wispTile)">
+    <rect x="0" y="0" width="512" height="512" fill="url(#wispBg)"></rect>
+    <path d="M325,134.4 Q325,161 351.6,161 Q325,161 325,187.6 Q325,161 298.4,161 Q325,161 325,134.4 Z" fill="#b98cf0" opacity="0.95"></path>
+    <circle cx="146" cy="166" r="6.7" fill="#b98cf0" opacity="0.85"></circle>
+    <circle cx="376" cy="269" r="6.7" fill="#7c8cf0" opacity="0.9"></circle>
+    <circle cx="154" cy="353" r="6.1" fill="#9aa6f5" opacity="0.8"></circle>
+    <circle cx="294" cy="371" r="5.6" fill="#7c8cf0" opacity="0.75"></circle>
+    <g transform="translate(233,261) scale(10.7) translate(-12,-12)">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="url(#wispMoon)"></path>
+    </g>
+  </g>
+</svg>
