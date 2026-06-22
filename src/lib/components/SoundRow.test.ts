@@ -8,7 +8,9 @@ const mockSound: SoundDef = {
   name: 'Rain',
   category: 'nature',
   tier: 'free',
-  assetPath: 'sounds/rain.mp3'
+  assetPath: 'sounds/rain.mp3',
+  bundled: false,
+  file: 'rain.mp3'
 };
 
 const premiumSound: SoundDef = {
@@ -16,7 +18,9 @@ const premiumSound: SoundDef = {
   name: 'Thunderstorm',
   category: 'nature',
   tier: 'premium',
-  assetPath: 'sounds/thunder.mp3'
+  assetPath: 'sounds/thunder.mp3',
+  bundled: false,
+  file: 'thunder.mp3'
 };
 
 describe('SoundRow', () => {
