@@ -2,11 +2,10 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { app } from '$lib/app';
-  import { WispEvent } from '$lib/analytics/events';
   import { formatBytes } from '$lib/format';
   import PremiumStatusCard from '$lib/components/PremiumStatusCard.svelte';
 
-  const { subscription, analytics, soundCache } = app;
+  const { subscription, soundCache } = app;
   const { isPremium } = subscription;
 
   let usage = $state(0);
@@ -21,15 +20,6 @@
       usage = 0;
     } catch {
       // platform call failed — leave usage unchanged
-    }
-  }
-
-  async function handleRestore() {
-    try {
-      await subscription.restore();
-      analytics.track(WispEvent.restore).catch(() => {});
-    } catch {
-      // ignore
     }
   }
 </script>
@@ -64,18 +54,7 @@
       <button class="clear-btn" onclick={handleClear}>Clear</button>
     </div>
 
-    <button class="settings-row" onclick={handleRestore}>
-      <div class="row-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-          <path d="M3 3v5h5"/>
-        </svg>
-      </div>
-      <span class="row-label">Restore purchases</span>
-      <svg class="row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M9 18l6-6-6-6"/>
-      </svg>
-    </button>
+    <!-- Restore purchases lives on the subscription screen (/subscription). -->
 
     <div class="settings-row info-row" role="note">
       <div class="row-icon">
