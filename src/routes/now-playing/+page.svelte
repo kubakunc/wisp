@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation';
   import { app } from '$lib/app';
   import { getSound } from '$lib/sounds/registry';
-  import { FREE_MIX_LIMIT } from '$lib/stores/savedMixes';
+  import { FREE_MIX_LIMIT, sameMixLayers } from '$lib/stores/savedMixes';
   import { modalOpen } from '$lib/stores/ui';
   import { WispEvent } from '$lib/analytics/events';
   import OrbitMixer from '$lib/components/OrbitMixer.svelte';
@@ -109,7 +109,10 @@
   // the Save button locks and routes to the paywall instead of erroring.
   let saveError = $state('');
   let saved = $state(false);
-  const saveLocked = $derived(!$isPremium && $mixes.length >= FREE_MIX_LIMIT);
+  // This exact mix (same sounds + volumes) is already in the saved list — show
+  // it as saved and don't let the user create a duplicate.
+  const alreadySaved = $derived($mixes.some((m) => sameMixLayers(m.layers, layers)));
+  const saveLocked = $derived(!alreadySaved && !$isPremium && $mixes.length >= FREE_MIX_LIMIT);
 
   function goPaywallForSave() {
     analytics.track(WispEvent.paywallView, { source: 'save_lock' }).catch(() => {});
@@ -129,6 +132,7 @@
       })
       .catch((e: Error) => {
         if (e.message === 'FREE_MIX_LIMIT') saveError = 'FREE_MIX_LIMIT';
+        // ALREADY_SAVED: nothing to do — the button already shows "Saved".
       });
   }
 
@@ -309,10 +313,10 @@
       {timerPillLabel}
     </button>
 
-    {#if saved}
-      <!-- Confirmation wins for its brief window, even if saving just hit the
-           free limit (otherwise the button would jump straight to locked). -->
-      <button class="pill pill-ghost" aria-label="Mix saved">
+    {#if saved || alreadySaved}
+      <!-- Already in the saved list (or just saved) — show it as saved and don't
+           allow a duplicate. Confirmation also wins over the free-limit state. -->
+      <button class="pill pill-ghost" aria-label="Mix already saved" disabled>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
@@ -511,6 +515,7 @@
   }
   .pill { padding: 13px 22px; border-radius: var(--r-pill); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; border: none; transition: opacity 0.15s; }
   .pill:hover { opacity: 0.85; }
+  .pill:disabled { opacity: 0.6; cursor: default; }
   .pill-accent { background: var(--surface); border: 1px solid rgba(124, 140, 240, 0.3); color: #9aa6f5; }
   .pill-ghost { background: var(--surface); border: 1px solid rgba(255, 255, 255, 0.06); color: var(--text-dim); }
 

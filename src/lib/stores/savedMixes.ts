@@ -4,6 +4,15 @@ import type { Mix, MixLayer } from '$lib/types';
 
 export const FREE_MIX_LIMIT = 1;
 
+/** Two mixes are "the same" when they layer the same sounds at the same volumes
+ *  (order-independent). Used to stop saving a mix that's already saved. */
+export function sameMixLayers(a: MixLayer[], b: MixLayer[]): boolean {
+  if (a.length !== b.length) return false;
+  const norm = (ls: MixLayer[]) =>
+    ls.map((l) => `${l.soundId}:${Math.round(l.volume * 100)}`).sort().join('|');
+  return norm(a) === norm(b);
+}
+
 // IDs must be unique across the whole lifetime of the install. An in-memory
 // counter is NOT safe: it resets to 0 every launch, so a mix saved in one
 // session and another saved in a later session both became "mix-1" — duplicate
@@ -56,6 +65,12 @@ export function createSavedMixesStore(storage: StorageService, idGen: () => stri
     },
     canSave,
     async save(name: string, layers: MixLayer[], isPremium: boolean): Promise<Mix> {
+      // Don't save a mix that's already saved (same sounds + volumes). Checked
+      // before the free-tier limit so re-saving the current mix reports
+      // "already saved" rather than a misleading limit error.
+      if (get({ subscribe }).some((m) => sameMixLayers(m.layers, layers))) {
+        throw new Error('ALREADY_SAVED');
+      }
       if (!canSave(isPremium)) throw new Error('FREE_MIX_LIMIT');
       const mix: Mix = { id: idGen(), name, layers };
       await persist([...get({ subscribe }), mix]);

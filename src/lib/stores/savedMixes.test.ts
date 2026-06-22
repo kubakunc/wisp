@@ -6,6 +6,7 @@ import { createFakePreferences } from '$lib/adapters/fakes/fakePreferences';
 import type { MixLayer } from '$lib/types';
 
 const layers: MixLayer[] = [{ soundId: 'rain', volume: 0.5 }];
+const layers2: MixLayer[] = [{ soundId: 'ocean', volume: 0.5 }];
 
 function make() {
   const { adapter, store: prefStore } = createFakePreferences();
@@ -25,7 +26,7 @@ describe('savedMixes store', () => {
   it('premium user can save many mixes', async () => {
     const { store } = make();
     await store.save('A', layers, true);
-    await store.save('B', layers, true);
+    await store.save('B', layers2, true);
     expect(get(store).map((m) => m.name)).toEqual(['A', 'B']);
   });
 
@@ -33,7 +34,7 @@ describe('savedMixes store', () => {
     const { store } = make();
     await store.save('A', layers, false);
     expect(store.canSave(false)).toBe(false);
-    await expect(store.save('B', layers, false)).rejects.toThrow('FREE_MIX_LIMIT');
+    await expect(store.save('B', layers2, false)).rejects.toThrow('FREE_MIX_LIMIT');
   });
 
   it('persists saved mixes to storage', async () => {
@@ -57,10 +58,27 @@ describe('savedMixes store', () => {
     const storage = createStorageService(createFakePreferences().adapter);
     const store = createSavedMixesStore(storage);
     const a = await store.save('A', layers, true);
-    const b = await store.save('B', layers, true);
+    const b = await store.save('B', layers2, true);
     expect(a.id).toBeTruthy();
     expect(b.id).toBeTruthy();
     expect(a.id).not.toBe(b.id);
+  });
+
+  it('refuses to save a mix that is already saved (same sounds + volumes)', async () => {
+    const { store } = make();
+    await store.save('A', layers, true);
+    await expect(store.save('A again', layers, true)).rejects.toThrow('ALREADY_SAVED');
+    expect(get(store)).toHaveLength(1);
+  });
+
+  it('allows saving a mix that differs in sounds or volume', async () => {
+    const { store } = make();
+    await store.save('Rain50', [{ soundId: 'rain', volume: 0.5 }], true);
+    // Different volume → not the same mix.
+    await store.save('Rain80', [{ soundId: 'rain', volume: 0.8 }], true);
+    // Different sound → not the same mix.
+    await store.save('Ocean', [{ soundId: 'ocean', volume: 0.5 }], true);
+    expect(get(store)).toHaveLength(3);
   });
 
   it('heals duplicate ids on load (regression: reset counter saved colliding ids)', async () => {
