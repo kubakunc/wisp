@@ -21,16 +21,30 @@
   // only ever show REAL, purchasable packages — never fake placeholder cards.
   const unavailable = $derived(!loading && packages.length === 0);
 
-  onMount(async () => {
-    analytics.track(WispEvent.paywallView).catch(() => {});
-    try {
-      packages = await subscription.listPackages();
-    } catch {
-      packages = [];
-    } finally {
-      selectedPkg = packages.find((p) => p.packageType === 'ANNUAL') ?? packages[0] ?? null;
-      loading = false;
+  const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+  // RevenueCat's offerings fetch can transiently return empty (cache warming),
+  // so retry a couple of times with a short backoff before giving up.
+  async function loadPackages() {
+    loading = true;
+    let pkgs: PackageLite[] = [];
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        pkgs = await subscription.listPackages();
+      } catch {
+        pkgs = [];
+      }
+      if (pkgs.length > 0) break;
+      if (attempt < 2) await sleep(600);
     }
+    packages = pkgs;
+    selectedPkg = pkgs.find((p) => p.packageType === 'ANNUAL') ?? pkgs[0] ?? null;
+    loading = false;
+  }
+
+  onMount(() => {
+    analytics.track(WispEvent.paywallView).catch(() => {});
+    loadPackages();
   });
 
   function goBack() {
@@ -111,8 +125,9 @@
   {#if loading}
     <div class="packages-loading" aria-live="polite">Loading plans…</div>
   {:else if unavailable}
-    <div class="packages-loading" aria-live="polite">
-      Plans are temporarily unavailable. Please check your connection and try again.
+    <div class="packages-unavailable" aria-live="polite">
+      <p>Plans are temporarily unavailable. Please check your connection and try again.</p>
+      <button class="retry-btn" onclick={loadPackages}>Try again</button>
     </div>
   {:else}
     <div class="packages">
@@ -265,6 +280,33 @@
     margin-top: 20px;
     color: var(--muted);
     font-size: 14px;
+  }
+
+  .packages-unavailable {
+    margin-top: 20px;
+    max-width: 340px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .packages-unavailable p {
+    margin: 0;
+  }
+  .retry-btn {
+    padding: 10px 24px;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    border: 1px solid rgba(124, 140, 240, 0.3);
+    color: #9aa6f5;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-body);
   }
 
   .cta-btn {

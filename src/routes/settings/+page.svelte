@@ -39,14 +39,14 @@
     <h1 class="page-title">Settings</h1>
   </header>
 
-  <!-- Premium status card -->
+  <!-- Premium status card → opens the Manage subscription screen -->
   <div class="section">
-    <PremiumStatusCard premium={$isPremium} />
-    {#if !$isPremium}
-      <a href="/paywall" class="upgrade-link" aria-label="Upgrade to Premium">
-        Upgrade to Premium →
-      </a>
-    {/if}
+    <a href="/subscription" class="card-link" aria-label={$isPremium ? 'Manage subscription' : 'See Premium plans'}>
+      <PremiumStatusCard premium={$isPremium} />
+    </a>
+    <a href="/subscription" class="upgrade-link">
+      {$isPremium ? 'Manage subscription' : 'Upgrade to Premium'} →
+    </a>
   </div>
 
   <!-- Settings rows -->
@@ -145,12 +145,18 @@
     gap: 10px;
   }
 
+  .card-link {
+    display: block;
+    text-decoration: none;
+  }
+
   .upgrade-link {
     font-size: 13px;
     color: var(--accent-1);
     font-weight: 600;
     text-align: right;
     padding-right: 4px;
+    text-decoration: none;
   }
 
   .rows-section {

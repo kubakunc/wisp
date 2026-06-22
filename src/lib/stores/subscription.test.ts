@@ -13,14 +13,20 @@ function makeStore(startPremium = false) {
 describe('subscription store', () => {
   it('starts not ready and not premium', () => {
     const { store } = makeStore();
-    expect(get(store)).toEqual({ premium: false, ready: false });
+    expect(get(store).ready).toBe(false);
+    expect(get(store).status.active).toBe(false);
+    expect(get(store.isPremium)).toBe(false);
   });
 
-  it('init populates premium state and marks ready', async () => {
+  it('init populates status and marks ready', async () => {
     const { store } = makeStore(true);
     await store.init('key');
-    expect(get(store)).toEqual({ premium: true, ready: true });
+    const s = get(store);
+    expect(s.ready).toBe(true);
+    expect(s.status.active).toBe(true);
+    expect(s.status.plan).toBe('annual');
     expect(get(store.isPremium)).toBe(true);
+    expect(get(store.status).active).toBe(true);
   });
 
   it('refresh picks up entitlement changes (resume case)', async () => {

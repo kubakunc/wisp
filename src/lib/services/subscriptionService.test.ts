@@ -6,8 +6,18 @@ describe('subscriptionService', () => {
   it('reports not-premium by default and after init', async () => {
     const { adapter } = createFakePurchases();
     const svc = createSubscriptionService(adapter);
-    expect(await svc.init('key')).toBe(false);
+    expect((await svc.init('key')).active).toBe(false);
     expect(await svc.isPremium()).toBe(false);
+  });
+
+  it('init returns the full status (plan, willRenew, expiry) when premium', async () => {
+    const { adapter } = createFakePurchases({ startPremium: true });
+    const svc = createSubscriptionService(adapter);
+    const status = await svc.init('key');
+    expect(status.active).toBe(true);
+    expect(status.plan).toBe('annual');
+    expect(status.willRenew).toBe(true);
+    expect(typeof status.expiresAt).toBe('number');
   });
 
   it('reports premium when entitlement is active', async () => {
@@ -30,7 +40,7 @@ describe('subscriptionService', () => {
     const svc = createSubscriptionService(adapter);
     await svc.init('key');
     const pkgs = await svc.listPackages();
-    expect(await svc.buy(pkgs[0])).toBe(true);
+    expect((await svc.buy(pkgs[0])).active).toBe(true);
     expect(await svc.isPremium()).toBe(true);
   });
 
@@ -39,7 +49,7 @@ describe('subscriptionService', () => {
     const svc = createSubscriptionService(adapter);
     await svc.init('key');
     setPremium(true);
-    expect(await svc.restore()).toBe(true);
+    expect((await svc.restore()).active).toBe(true);
   });
 
   describe('with no API key (unconfigured / free-tier fallback)', () => {
@@ -48,7 +58,7 @@ describe('subscriptionService', () => {
       // the guard short-circuits and configure() is skipped.
       const { adapter } = createFakePurchases({ startPremium: true });
       const svc = createSubscriptionService(adapter);
-      expect(await svc.init('')).toBe(false);
+      expect((await svc.init('')).active).toBe(false);
       expect(await svc.isPremium()).toBe(false);
     });
 
@@ -57,8 +67,8 @@ describe('subscriptionService', () => {
       const svc = createSubscriptionService(adapter);
       await svc.init('');
       expect(await svc.listPackages()).toEqual([]);
-      expect(await svc.buy({ identifier: 'x', productId: 'x', priceString: '$1', packageType: 'ANNUAL' })).toBe(false);
-      expect(await svc.restore()).toBe(false);
+      expect((await svc.buy({ identifier: 'x', productId: 'x', priceString: '$1', packageType: 'ANNUAL' })).active).toBe(false);
+      expect((await svc.restore()).active).toBe(false);
     });
   });
 });

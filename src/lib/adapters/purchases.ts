@@ -1,15 +1,22 @@
 // Real adapter: native-plugin wrapper, exercised via fakes (unit) + Playwright E2E, not unit-testable in jsdom.
 // Targets @revenuecat/purchases-capacitor@13.
 // .d.ts: node_modules/@revenuecat/purchases-capacitor/dist/esm/definitions.d.ts
-//        node_modules/@revenuecat/purchases-typescript-internal-esm/dist/offerings.d.ts
-//        node_modules/@revenuecat/purchases-typescript-internal-esm/dist/customerInfo.d.ts
+//        node_modules/@revenuecat/purchases-typescript-internal-esm/dist/customerInfo.d.ts (CustomerInfo, PurchasesEntitlementInfo)
 import { Purchases, PACKAGE_TYPE } from '@revenuecat/purchases-capacitor';
-import type { PurchasesPackage, PurchasesEntitlementInfos } from '@revenuecat/purchases-capacitor';
+import type { PurchasesPackage } from '@revenuecat/purchases-capacitor';
+import {
+  toStatus,
+  INACTIVE_STATUS,
+  planFromProductId,
+  type SubscriptionStatus,
+  type SubscriptionPlan,
+  type SubscriptionStatusKind
+} from '$lib/subscription/status';
 
-export interface CustomerInfoLite {
-  /** Identifiers of the user's currently ACTIVE entitlements (any = premium). */
-  entitlements: string[];
-}
+// Re-export the status model so existing consumers can keep importing from here.
+export { toStatus, INACTIVE_STATUS, planFromProductId };
+export type { SubscriptionStatus, SubscriptionPlan, SubscriptionStatusKind };
+
 export interface PackageLite {
   identifier: string;
   productId: string;
@@ -22,14 +29,10 @@ export interface OfferingsLite {
 
 export interface PurchasesAdapter {
   configure(apiKey: string, appUserId?: string): Promise<void>;
-  getCustomerInfo(): Promise<CustomerInfoLite>;
+  getStatus(): Promise<SubscriptionStatus>;
   getOfferings(): Promise<OfferingsLite>;
-  purchasePackage(pkg: PackageLite): Promise<CustomerInfoLite>;
-  restorePurchases(): Promise<CustomerInfoLite>;
-}
-
-function toLite(entitlements: PurchasesEntitlementInfos): CustomerInfoLite {
-  return { entitlements: Object.keys(entitlements.active) };
+  purchasePackage(pkg: PackageLite): Promise<SubscriptionStatus>;
+  restorePurchases(): Promise<SubscriptionStatus>;
 }
 
 // Maps our lite identifiers back to the live RevenueCat package objects so
@@ -40,12 +43,11 @@ export const purchasesAdapter: PurchasesAdapter = {
   async configure(apiKey, appUserId) {
     await Purchases.configure({ apiKey, ...(appUserId ? { appUserID: appUserId } : {}) });
   },
-  async getCustomerInfo() {
+  async getStatus() {
     const { customerInfo } = await Purchases.getCustomerInfo();
-    return toLite(customerInfo.entitlements);
+    return toStatus(customerInfo);
   },
   async getOfferings() {
-    // v13: getOfferings() returns PurchasesOfferings directly (has .current: PurchasesOffering | null)
     const offerings = await Purchases.getOfferings();
     const pkgs = offerings.current?.availablePackages ?? [];
     livePackages.clear();
@@ -66,10 +68,10 @@ export const purchasesAdapter: PurchasesAdapter = {
     const live = livePackages.get(pkg.identifier);
     if (!live) throw new Error(`purchasesAdapter: unknown package identifier "${pkg.identifier}" — call getOfferings first`);
     const { customerInfo } = await Purchases.purchasePackage({ aPackage: live });
-    return toLite(customerInfo.entitlements);
+    return toStatus(customerInfo);
   },
   async restorePurchases() {
     const { customerInfo } = await Purchases.restorePurchases();
-    return toLite(customerInfo.entitlements);
+    return toStatus(customerInfo);
   }
 };
