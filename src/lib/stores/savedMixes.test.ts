@@ -53,10 +53,32 @@ describe('savedMixes store', () => {
     expect(prefStore.get('wisp.mixes')).not.toContain(mix.id);
   });
 
-  it('uses the counter-based default idGen when none injected', async () => {
+  it('default idGen produces a unique id per save (never collides across saves)', async () => {
     const storage = createStorageService(createFakePreferences().adapter);
     const store = createSavedMixesStore(storage);
-    const mix = await store.save('A', layers, true);
-    expect(mix.id).toBe('mix-1');
+    const a = await store.save('A', layers, true);
+    const b = await store.save('B', layers, true);
+    expect(a.id).toBeTruthy();
+    expect(b.id).toBeTruthy();
+    expect(a.id).not.toBe(b.id);
+  });
+
+  it('heals duplicate ids on load (regression: reset counter saved colliding ids)', async () => {
+    const { adapter } = createFakePreferences();
+    const storage = createStorageService(adapter);
+    // Legacy data: two mixes that were both saved as "mix-1" in separate sessions.
+    await storage.saveMixes([
+      { id: 'mix-1', name: 'A', layers },
+      { id: 'mix-1', name: 'B', layers }
+    ]);
+    let n = 0;
+    const store = createSavedMixesStore(storage, () => `new-${++n}`);
+    await store.load();
+    const mixes = get(store);
+    expect(mixes.map((m) => m.name)).toEqual(['A', 'B']); // data + order preserved
+    expect(new Set(mixes.map((m) => m.id)).size).toBe(2); // ids now unique — no each_key_duplicate
+    // Re-persisted so the heal is permanent.
+    const reloaded = await storage.loadMixes();
+    expect(new Set(reloaded.map((m) => m.id)).size).toBe(2);
   });
 });

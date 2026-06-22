@@ -4,9 +4,17 @@ import type { Mix, MixLayer } from '$lib/types';
 
 export const FREE_MIX_LIMIT = 1;
 
+// IDs must be unique across the whole lifetime of the install. An in-memory
+// counter is NOT safe: it resets to 0 every launch, so a mix saved in one
+// session and another saved in a later session both became "mix-1" — duplicate
+// ids that crash the Mixes list's keyed {#each} (svelte each_key_duplicate).
+// Use a collision-resistant id (UUID, with a timestamp+random fallback).
 function defaultIdGen(): () => string {
-  let n = 0;
-  return () => `mix-${++n}`;
+  return () => {
+    const c = globalThis.crypto;
+    if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+    return `mix-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  };
 }
 
 export function createSavedMixesStore(storage: StorageService, idGen: () => string = defaultIdGen()) {
@@ -25,7 +33,26 @@ export function createSavedMixesStore(storage: StorageService, idGen: () => stri
   return {
     subscribe,
     async load(): Promise<void> {
-      set(await storage.loadMixes());
+      // Heal legacy data: older builds could persist mixes with colliding ids
+      // (the in-memory counter reset across launches). Re-key any missing or
+      // duplicate id so the keyed {#each} in the Mixes list never throws, and
+      // re-persist so the fix is permanent.
+      const loaded = await storage.loadMixes();
+      const seen = new Set<string>();
+      let changed = false;
+      const unique = loaded.map((m) => {
+        if (!m.id || seen.has(m.id)) {
+          changed = true;
+          let id = idGen();
+          while (seen.has(id)) id = idGen();
+          seen.add(id);
+          return { ...m, id };
+        }
+        seen.add(m.id);
+        return m;
+      });
+      set(unique);
+      if (changed) await storage.saveMixes(unique);
     },
     canSave,
     async save(name: string, layers: MixLayer[], isPremium: boolean): Promise<Mix> {

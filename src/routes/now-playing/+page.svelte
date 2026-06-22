@@ -376,7 +376,7 @@
   }
   /* Reserve room for the bottom ad box (free users) so it never covers actions. */
   .now-playing.has-ad {
-    padding-bottom: calc(110px + var(--wisp-ad-box-h));
+    padding-bottom: calc(110px + var(--wisp-ad-box-h) + env(safe-area-inset-bottom, 0px));
   }
 
   .np-header {
@@ -502,12 +502,12 @@
 
   /* Bottom actions */
   .bottom-actions {
-    position: fixed; bottom: 30px; left: 0; right: 0;
+    position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 30px); left: 0; right: 0;
     display: flex; align-items: center; justify-content: center; gap: 14px; z-index: 10;
   }
   /* Lift the actions above the ad box when it's shown. */
   .now-playing.has-ad .bottom-actions {
-    bottom: calc(30px + var(--wisp-ad-box-h));
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 30px + var(--wisp-ad-box-h));
   }
   .pill { padding: 13px 22px; border-radius: var(--r-pill); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; border: none; transition: opacity 0.15s; }
   .pill:hover { opacity: 0.85; }
