@@ -92,4 +92,40 @@ describe('SoundRow', () => {
     });
     expect(container.querySelector('.dl-ring')).toBeFalsy();
   });
+
+  it('shows a download-failed message with a retry hint on error', () => {
+    const { container } = render(SoundRow, {
+      sound: { id: 'rain', name: 'Rain', category: 'nature', tier: 'free', assetPath: 'sounds/rain.wav', file: 'rain.wav', bundled: false },
+      active: false, locked: false, downloading: false, progress: 0, error: true, onPrimary: () => {}
+    });
+    expect(screen.getByText(/Couldn.t download/i)).toBeTruthy();
+    expect(container.querySelector('.dl-error-badge')).toBeTruthy();
+  });
+
+  it('shows a "Tap to download" hint + cloud badge for a not-yet-downloaded sound', () => {
+    const { container } = render(SoundRow, {
+      sound: { id: 'rain', name: 'Rain', category: 'nature', tier: 'free', assetPath: 'sounds/rain.wav', file: 'rain.wav', bundled: false },
+      active: false, locked: false, needsDownload: true, onPrimary: () => {}
+    });
+    expect(screen.getByText('Tap to download')).toBeTruthy();
+    expect(container.querySelector('.dl-cloud')).toBeTruthy();
+  });
+
+  it('no download hint for a local (bundled/cached) sound', () => {
+    const { container } = render(SoundRow, {
+      sound: { id: 'whitenoise', name: 'White Noise', category: 'noise', tier: 'free', assetPath: 'sounds/wn.wav', file: 'wn.wav', bundled: true },
+      active: false, locked: false, needsDownload: false, onPrimary: () => {}
+    });
+    expect(screen.queryByText('Tap to download')).toBeFalsy();
+    expect(container.querySelector('.dl-cloud')).toBeFalsy();
+  });
+
+  it('downloading state takes precedence over a prior error (retry in progress)', () => {
+    const { container } = render(SoundRow, {
+      sound: { id: 'rain', name: 'Rain', category: 'nature', tier: 'free', assetPath: 'sounds/rain.wav', file: 'rain.wav', bundled: false },
+      active: false, locked: false, downloading: true, progress: 0.3, error: true, onPrimary: () => {}
+    });
+    expect(container.querySelector('.dl-ring')).toBeTruthy();
+    expect(container.querySelector('.dl-error-badge')).toBeFalsy();
+  });
 });

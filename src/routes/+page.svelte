@@ -8,13 +8,29 @@
   import SoundRow from '$lib/components/SoundRow.svelte';
   import type { Mix } from '$lib/types';
 
-  const { sounds, mixes, subscription, analytics, downloads } = app;
+  const { sounds, mixes, subscription, analytics, downloads, soundCache } = app;
   const { isPremium } = subscription;
 
-  // Load mixes on mount
+  // Which non-bundled sounds are already on the device, so we can show whether a
+  // tap will play instantly or download first. Bundled sounds are always local.
+  let cached = $state<Record<string, boolean>>({});
+
+  // Load mixes + probe the on-device cache on mount.
   onMount(() => {
     mixes.load().catch(() => {});
+    for (const s of SOUNDS) {
+      if (s.bundled) continue;
+      soundCache.isReady(s.id).then((ready) => { cached[s.id] = ready; }).catch(() => {});
+    }
   });
+
+  // A sound needs downloading when it isn't bundled, isn't already cached, and a
+  // successful download for it hasn't completed this session.
+  function needsDownload(soundId: string, bundled: boolean): boolean {
+    if (bundled) return false; // bundled ships in the app — always local
+    if (cached[soundId]) return false;
+    return $downloads[soundId]?.status !== 'ready';
+  }
 
   // Hero favorite mix — first saved mix or default
   const DEFAULT_MIX: Mix = {
@@ -163,6 +179,8 @@
         locked={sound.tier === 'premium' && !$isPremium && !activeSoundIds.includes(sound.id)}
         downloading={$downloads[sound.id]?.status === 'downloading'}
         progress={$downloads[sound.id]?.progress ?? 0}
+        error={$downloads[sound.id]?.status === 'error'}
+        needsDownload={needsDownload(sound.id, sound.bundled)}
         onPrimary={() => handleSoundTap(sound.id, sound.tier)}
       />
     {:else}

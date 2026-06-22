@@ -4,13 +4,17 @@
   import SoundIcon from './SoundIcon.svelte';
   import Toggle from './Toggle.svelte';
 
-  let { sound, active, volume = 0, locked, downloading = false, progress = 0, onPrimary }: {
+  let { sound, active, volume = 0, locked, downloading = false, progress = 0, error = false, needsDownload = false, onPrimary }: {
     sound: SoundDef;
     active: boolean;
     volume?: number;
     locked: boolean;
     downloading?: boolean;
     progress?: number;
+    /** Last download attempt failed (e.g. offline / sound unavailable). */
+    error?: boolean;
+    /** Not on the device yet — tapping will download it first (vs. instant play). */
+    needsDownload?: boolean;
     onPrimary: () => void;
   } = $props();
 </script>
@@ -19,6 +23,7 @@
   class="sound-row"
   class:active
   class:locked
+  class:error={error && !downloading}
 >
   <button
     class="row-btn"
@@ -35,14 +40,33 @@
             stroke-dashoffset={2*Math.PI*18*(1-Math.max(0,Math.min(1,progress)))}
             transform="rotate(-90 22 22)"/>
         </svg>
+      {:else if error}
+        <span class="dl-error-badge" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 9v4M12 17h.01"/><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0z"/>
+          </svg>
+        </span>
+      {:else if needsDownload && !locked}
+        <span class="dl-cloud" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 13v8M8 17l4 4 4-4"/>
+            <path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/>
+          </svg>
+        </span>
       {/if}
     </div>
     <div class="info">
       <span class="name">{sound.name}</span>
       {#if locked}
         <span class="subtitle premium">Premium</span>
+      {:else if downloading}
+        <span class="subtitle dl-label">Downloading… {Math.round(Math.max(0, Math.min(1, progress)) * 100)}%</span>
+      {:else if error}
+        <span class="subtitle error-label">Couldn’t download · tap to retry</span>
       {:else if active}
         <span class="subtitle active-label">On · {formatPercent(volume)}</span>
+      {:else if needsDownload}
+        <span class="subtitle dl-hint">Tap to download</span>
       {/if}
     </div>
   </button>
@@ -140,6 +164,48 @@
 
   .subtitle.active-label {
     color: var(--accent-1);
+  }
+
+  .subtitle.dl-label {
+    color: var(--accent-1);
+  }
+
+  .subtitle.error-label {
+    color: #ff9b9b;
+  }
+
+  .subtitle.dl-hint {
+    color: var(--muted);
+  }
+
+  .dl-cloud {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--surface-hi-a);
+    border: 1px solid rgba(124, 140, 240, 0.4);
+    color: #9aa6f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sound-row.error {
+    border-color: rgba(255, 107, 107, 0.45);
+  }
+
+  .dl-error-badge {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ff9b9b;
+    background: rgba(255, 107, 107, 0.12);
+    border-radius: 14px;
   }
 
   .trailing {
