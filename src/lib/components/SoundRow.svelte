@@ -4,11 +4,13 @@
   import SoundIcon from './SoundIcon.svelte';
   import Toggle from './Toggle.svelte';
 
-  let { sound, active, volume = 0, locked, onPrimary }: {
+  let { sound, active, volume = 0, locked, downloading = false, progress = 0, onPrimary }: {
     sound: SoundDef;
     active: boolean;
     volume?: number;
     locked: boolean;
+    downloading?: boolean;
+    progress?: number;
     onPrimary: () => void;
   } = $props();
 </script>
@@ -25,6 +27,15 @@
   >
     <div class="icon-tile">
       <SoundIcon id={sound.id} size={24} />
+      {#if downloading}
+        <svg class="dl-ring" width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
+          <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(124,140,240,0.25)" stroke-width="3"/>
+          <circle cx="22" cy="22" r="18" fill="none" stroke="var(--accent-1)" stroke-width="3"
+            stroke-linecap="round" stroke-dasharray={2*Math.PI*18}
+            stroke-dashoffset={2*Math.PI*18*(1-Math.max(0,Math.min(1,progress)))}
+            transform="rotate(-90 22 22)"/>
+        </svg>
+      {/if}
     </div>
     <div class="info">
       <span class="name">{sound.name}</span>
@@ -89,6 +100,12 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    position: relative;
+  }
+
+  .dl-ring {
+    position: absolute;
+    inset: 0;
   }
 
   .sound-row.active .icon-tile {

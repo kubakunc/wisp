@@ -9,7 +9,7 @@
   import NowPlayingBar from '$lib/components/NowPlayingBar.svelte';
   import type { Mix } from '$lib/types';
 
-  const { sounds, mixes, subscription, analytics } = app;
+  const { sounds, mixes, subscription, analytics, downloads } = app;
   const soundsPaused = sounds.paused;
   const { isPremium } = subscription;
 
@@ -172,6 +172,8 @@
         active={activeSoundIds.includes(sound.id)}
         volume={$sounds[sound.id] ?? 0}
         locked={sound.tier === 'premium' && !$isPremium && !activeSoundIds.includes(sound.id)}
+        downloading={$downloads[sound.id]?.status === 'downloading'}
+        progress={$downloads[sound.id]?.progress ?? 0}
         onPrimary={() => handleSoundTap(sound.id, sound.tier)}
       />
     {:else}
