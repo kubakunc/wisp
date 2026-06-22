@@ -76,6 +76,27 @@ describe('adsService', () => {
     expect(state.lastMargin).toBe(120);
   });
 
+  it('repositions the banner (remove + re-show) when the margin changes', async () => {
+    const { adapter, state } = createFakeAdMob({ consent: 'obtained' });
+    const svc = createAdsService(adapter, { marginBottomPx: 72 });
+    await svc.init();
+    await svc.showIfEligible(false);
+    expect(state.lastMargin).toBe(72);
+    await svc.showIfEligible(false, 0); // full-screen player → bottom-anchored
+    expect(state.lastMargin).toBe(0);
+    expect(state.bannerShown).toBe(true);
+  });
+
+  it('keeps the banner in place when the margin is unchanged', async () => {
+    const { adapter, state } = createFakeAdMob({ consent: 'obtained' });
+    const svc = createAdsService(adapter, { marginBottomPx: 72 });
+    await svc.init();
+    await svc.showIfEligible(false);
+    await svc.showIfEligible(false); // same margin → no reposition
+    expect(state.lastMargin).toBe(72);
+    expect(state.bannerShown).toBe(true);
+  });
+
   it('removes banner when premium user calls showIfEligible (was previously shown)', async () => {
     const { adapter, state } = createFakeAdMob({ consent: 'obtained' });
     const svc = createAdsService(adapter);

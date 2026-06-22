@@ -2,174 +2,107 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
 import TimerSheet from './TimerSheet.svelte';
 
+const base = { open: true, onChoose: () => {}, onClose: () => {} } as const;
+
 describe('TimerSheet', () => {
   it('renders nothing when closed', () => {
-    const { container } = render(TimerSheet, {
-      open: false, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {}
-    });
+    const { container } = render(TimerSheet, { ...base, open: false });
     expect(container.textContent?.trim()).toBe('');
   });
 
   it('renders the sheet when open', () => {
-    render(TimerSheet, {
-      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {}
-    });
+    render(TimerSheet, { ...base });
     expect(screen.getByRole('dialog', { name: 'Sleep timer' })).toBeTruthy();
   });
 
   it('renders all 6 chips: 15/30/45/60/90/Custom', () => {
-    render(TimerSheet, {
-      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {}
-    });
-    expect(screen.getByRole('button', { name: '15 min' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '30 min' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '45 min' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '60 min' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '90 min' })).toBeTruthy();
+    render(TimerSheet, { ...base });
+    for (const m of ['15 min', '30 min', '45 min', '60 min', '90 min']) {
+      expect(screen.getByRole('button', { name: m })).toBeTruthy();
+    }
     expect(screen.getByRole('button', { name: 'Custom' })).toBeTruthy();
   });
 
-  it('picks a preset and starts', async () => {
-    const onPick = vi.fn();
-    const onStart = vi.fn();
-    render(TimerSheet, {
-      open: true, selected: 30, onPick, onStart, onClose: () => {}
-    });
+  it('tapping a preset starts it immediately (no separate confirm)', async () => {
+    const onChoose = vi.fn();
+    render(TimerSheet, { ...base, onChoose });
     await fireEvent.click(screen.getByRole('button', { name: '45 min' }));
-    expect(onPick).toHaveBeenCalledWith(45);
-    await fireEvent.click(screen.getByRole('button', { name: /Start timer/ }));
-    expect(onStart).toHaveBeenCalled();
+    expect(onChoose).toHaveBeenCalledWith('preset', 45);
   });
 
-  it('calls onPick with "custom" when Custom chip clicked', async () => {
-    const onPick = vi.fn();
-    render(TimerSheet, {
-      open: true, selected: null, onPick, onStart: () => {}, onClose: () => {}
-    });
-    await fireEvent.click(screen.getByRole('button', { name: 'Custom' }));
-    expect(onPick).toHaveBeenCalledWith('custom');
+  it('there is no global "Start timer" button before choosing custom', () => {
+    render(TimerSheet, { ...base });
+    expect(screen.queryByRole('button', { name: /Start timer/ })).toBeFalsy();
   });
 
-  it('calls onPick with "until" when Until row clicked', async () => {
-    const onPick = vi.fn();
-    render(TimerSheet, {
-      open: true, selected: null, onPick, onStart: () => {}, onClose: () => {}
-    });
+  it('tapping "Until I stop it" chooses until immediately', async () => {
+    const onChoose = vi.fn();
+    render(TimerSheet, { ...base, onChoose });
     await fireEvent.click(screen.getByText('Until I stop it'));
-    expect(onPick).toHaveBeenCalledWith('until');
+    expect(onChoose).toHaveBeenCalledWith('until');
+  });
+
+  it('Custom reveals the stepper (does not start yet)', async () => {
+    const onChoose = vi.fn();
+    render(TimerSheet, { ...base, onChoose });
+    await fireEvent.click(screen.getByRole('button', { name: 'Custom' }));
+    expect(screen.getByRole('spinbutton', { name: /custom timer duration/i })).toBeTruthy();
+    expect(onChoose).not.toHaveBeenCalled();
+  });
+
+  it('custom confirm starts the chosen minutes', async () => {
+    const onChoose = vi.fn();
+    render(TimerSheet, { ...base, onChoose });
+    await fireEvent.click(screen.getByRole('button', { name: 'Custom' }));
+    await fireEvent.click(screen.getByRole('button', { name: /Start timer · 20 min/ }));
+    expect(onChoose).toHaveBeenCalledWith('custom', 20);
+  });
+
+  it('stepper − and + adjust the custom value before confirming', async () => {
+    const onChoose = vi.fn();
+    render(TimerSheet, { ...base, onChoose });
+    await fireEvent.click(screen.getByRole('button', { name: 'Custom' }));
+    await fireEvent.click(screen.getByRole('button', { name: /decrease by 5/i })); // 20 → 15
+    await fireEvent.click(screen.getByRole('button', { name: /Start timer · 15 min/ }));
+    expect(onChoose).toHaveBeenCalledWith('custom', 15);
+  });
+
+  it('typing a custom value then confirming starts that value', async () => {
+    const onChoose = vi.fn();
+    render(TimerSheet, { ...base, onChoose });
+    await fireEvent.click(screen.getByRole('button', { name: 'Custom' }));
+    const input = screen.getByRole('spinbutton', { name: /custom timer duration/i });
+    await fireEvent.input(input, { target: { valueAsNumber: 45 } });
+    await fireEvent.click(screen.getByRole('button', { name: /Start timer · 45 min/ }));
+    expect(onChoose).toHaveBeenCalledWith('custom', 45);
+  });
+
+  it('shows a "Turn off timer" button only when a timer is active', async () => {
+    const onCancel = vi.fn();
+    const { rerender } = render(TimerSheet, { ...base, active: false, onCancel });
+    expect(screen.queryByRole('button', { name: 'Turn off timer' })).toBeFalsy();
+    await rerender({ ...base, active: true, onCancel });
+    await fireEvent.click(screen.getByRole('button', { name: 'Turn off timer' }));
+    expect(onCancel).toHaveBeenCalledOnce();
   });
 
   it('calls onClose when scrim clicked', async () => {
     const onClose = vi.fn();
-    const { container } = render(TimerSheet, {
-      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose
-    });
-    const scrim = container.querySelector('.scrim') as HTMLElement;
-    await fireEvent.click(scrim);
+    const { container } = render(TimerSheet, { ...base, onClose });
+    await fireEvent.click(container.querySelector('.scrim') as HTMLElement);
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it('shows explainer text', () => {
-    render(TimerSheet, {
-      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {}
-    });
-    expect(screen.getByText(/Sound fades out gently/)).toBeTruthy();
-  });
-
-  it('selected chip has chip-selected class', () => {
-    const { container } = render(TimerSheet, {
-      open: true, selected: 30, onPick: () => {}, onStart: () => {}, onClose: () => {}
-    });
-    const selectedChip = container.querySelector('.chip-selected');
-    expect(selectedChip).toBeTruthy();
-    expect(selectedChip?.textContent?.trim()).toBe('30');
-  });
-
-  it('CTA shows minutes when a number is selected', () => {
-    render(TimerSheet, {
-      open: true, selected: 45, onPick: () => {}, onStart: () => {}, onClose: () => {}
-    });
-    expect(screen.getByRole('button', { name: 'Start timer · 45 min' })).toBeTruthy();
-  });
-
-  it('has dialog role', () => {
-    render(TimerSheet, {
-      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {}
-    });
-    expect(screen.getByRole('dialog')).toBeTruthy();
-  });
-
-  it('shows sleep timer heading', () => {
-    render(TimerSheet, {
-      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose: () => {}
-    });
-    expect(screen.getByText('Sleep timer')).toBeTruthy();
-  });
-
-  it('calls onClose when Escape key is pressed on the dialog', async () => {
+  it('calls onClose when Escape is pressed', async () => {
     const onClose = vi.fn();
-    render(TimerSheet, {
-      open: true, selected: null, onPick: () => {}, onStart: () => {}, onClose
-    });
-    const dialog = screen.getByRole('dialog');
-    await fireEvent.keyDown(dialog, { key: 'Escape' });
+    render(TimerSheet, { ...base, onClose });
+    await fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  // Task 13 — Custom timer fixes
-  it('Custom chip calls onPick with "custom"', async () => {
-    const onPick = vi.fn();
-    render(TimerSheet, {
-      open: true, selected: null, onPick, onStart: () => {}, onClose: () => {}
-    });
-    await fireEvent.click(screen.getByRole('button', { name: 'Custom' }));
-    expect(onPick).toHaveBeenCalledWith('custom');
-  });
-
-  it('Custom chip reveals the numeric stepper input', async () => {
-    const onPick = vi.fn();
-    render(TimerSheet, {
-      open: true, selected: 'custom', onPick, onStart: () => {}, onClose: () => {}
-    });
-    // The stepper input should be visible when selected === 'custom'
-    const input = screen.getByRole('spinbutton', { name: /custom timer duration/i });
-    expect(input).toBeTruthy();
-  });
-
-  it('changing the custom input calls onPick with the numeric value', async () => {
-    const onPick = vi.fn();
-    render(TimerSheet, {
-      open: true, selected: 'custom', onPick, onStart: () => {}, onClose: () => {}
-    });
-    const input = screen.getByRole('spinbutton', { name: /custom timer duration/i });
-    await fireEvent.input(input, { target: { valueAsNumber: 45 } });
-    expect(onPick).toHaveBeenCalledWith(45);
-  });
-
-  it('CTA shows the chosen custom minutes when a number is active from custom flow', () => {
-    render(TimerSheet, {
-      open: true, selected: 45, onPick: () => {}, onStart: () => {}, onClose: () => {}
-    });
-    expect(screen.getByRole('button', { name: 'Start timer · 45 min' })).toBeTruthy();
-  });
-
-  it('stepper − button calls onPick with decremented value', async () => {
-    const onPick = vi.fn();
-    render(TimerSheet, {
-      open: true, selected: 'custom', onPick, onStart: () => {}, onClose: () => {}
-    });
-    await fireEvent.click(screen.getByRole('button', { name: /decrease by 5/i }));
-    // default is 20, -5 = 15
-    expect(onPick).toHaveBeenCalledWith(15);
-  });
-
-  it('stepper + button calls onPick with incremented value', async () => {
-    const onPick = vi.fn();
-    render(TimerSheet, {
-      open: true, selected: 'custom', onPick, onStart: () => {}, onClose: () => {}
-    });
-    await fireEvent.click(screen.getByRole('button', { name: /increase by 5/i }));
-    // default is 20, +5 = 25
-    expect(onPick).toHaveBeenCalledWith(25);
+  it('shows explainer text + heading', () => {
+    render(TimerSheet, { ...base });
+    expect(screen.getByText(/Sound fades out gently/)).toBeTruthy();
+    expect(screen.getByText('Sleep timer')).toBeTruthy();
   });
 });

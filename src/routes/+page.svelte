@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { app } from '$lib/app';
   import { SOUNDS, getSound, playableLayers } from '$lib/sounds/registry';
+  import { phraseForDate } from '$lib/phrases';
   import { WispEvent } from '$lib/analytics/events';
   import SoundRow from '$lib/components/SoundRow.svelte';
   import NowPlayingBar from '$lib/components/NowPlayingBar.svelte';
@@ -95,14 +96,25 @@
       .join(' · ')
   );
   const isPlaying = $derived(activeCount > 0 && !$soundsPaused);
+
+  // Header: a calming bedtime phrase (rotates daily) over a live time-of-day
+  // greeting, instead of a static "Sounds" title.
+  const now = new Date();
+  const dailyPhrase = phraseForDate(now);
+  const greeting = (() => {
+    const weekday = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const h = now.getHours();
+    const part = h < 5 ? 'night' : h < 12 ? 'morning' : h < 17 ? 'afternoon' : h < 21 ? 'evening' : 'night';
+    return `${weekday} ${part}`;
+  })();
 </script>
 
 <div class="home">
   <!-- Header -->
   <header class="header">
     <div class="header-left">
-      <span class="eyebrow">Wednesday night</span>
-      <h1 class="page-title">Sounds</h1>
+      <span class="eyebrow">{greeting}</span>
+      <h1 class="page-title">{dailyPhrase}</h1>
     </div>
     <button class="search-btn" class:active={searchOpen} aria-label="Search sounds" aria-pressed={searchOpen} onclick={toggleSearch}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">

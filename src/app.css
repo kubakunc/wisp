@@ -8,6 +8,7 @@
   --text: #eef1ff; --text-dim: #dfe3f7; --muted: #8d96bd; --muted-2: #6b739a;
   --locked: #5b6488; --premium: #9a7fc4; --on-accent: #0c1226;
   --r-row: 12px; --r-card: 18px; --r-sheet: 24px; --r-pill: 30px;
+  --wisp-ad-box-h: 92px; /* AD header + native banner slot */
   --accent-grad: linear-gradient(135deg, var(--accent-1), var(--accent-2));
   --font-display: 'Sora', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

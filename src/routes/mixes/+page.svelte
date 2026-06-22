@@ -9,22 +9,36 @@
 
   const { sounds, mixes, subscription, analytics } = app;
   const { isPremium } = subscription;
+  const soundsPaused = sounds.paused;
 
   onMount(() => {
     mixes.load().catch(() => {});
   });
 
-  // Determine if a mix is currently playing (layers match $sounds)
-  function isPlaying(mix: Mix): boolean {
+  // A mix is the "active" set when the currently-loaded sounds match its layers
+  // (regardless of paused state).
+  function activeMatches(mix: Mix): boolean {
     const active = $sounds;
-    const activeEntries = Object.entries(active);
-    if (activeEntries.length !== mix.layers.length) return false;
+    const entries = Object.entries(active);
+    if (entries.length !== mix.layers.length) return false;
     return mix.layers.every((l) => Math.abs((active[l.soundId] ?? -1) - l.volume) < 0.01);
   }
 
+  // "Playing" = it's the active mix AND playback isn't paused. So pausing flips
+  // the card back to a play state instead of falsely showing "Playing".
+  function isPlaying(mix: Mix): boolean {
+    return activeMatches(mix) && !$soundsPaused;
+  }
+
   function handlePlay(mix: Mix) {
-    // Free users can't play premium sounds — play the allowed subset, or route to
-    // the paywall if the mix is entirely premium.
+    // If this mix is already loaded, the button toggles pause/resume in place
+    // (no navigation) so its play/pause icon actually controls playback.
+    if (activeMatches(mix)) {
+      sounds.togglePlayback().catch(() => {});
+      return;
+    }
+    // Otherwise load it. Free users can't play premium sounds — play the allowed
+    // subset, or route to the paywall if the mix is entirely premium.
     const allowed = playableLayers(mix.layers, $isPremium);
     if (allowed.length === 0) {
       analytics.track(WispEvent.paywallView, { source: 'mix_premium' }).catch(() => {});

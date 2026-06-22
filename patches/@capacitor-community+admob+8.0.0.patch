@@ -1,7 +1,23 @@
 diff --git a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
-index c629139..38d9d7a 100644
+index c629139..9b711df 100644
 --- a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
 +++ b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
+@@ -93,13 +93,13 @@ public class BannerExecutor extends Executor {
+             // TODO: Make an enum like the AdSizeEnum?
+             switch (adOptions.position) {
+                 case "TOP_CENTER":
+-                    mAdViewLayoutParams.gravity = Gravity.TOP;
++                    mAdViewLayoutParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+                     break;
+                 case "CENTER":
+                     mAdViewLayoutParams.gravity = Gravity.CENTER;
+                     break;
+                 default:
+-                    mAdViewLayoutParams.gravity = Gravity.BOTTOM;
++                    mAdViewLayoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+                     break;
+             }
+ 
 @@ -110,10 +110,11 @@ public class BannerExecutor extends Executor {
                      int bottomInset = insets.getSystemWindowInsetBottom();
                      int topInset = insets.getSystemWindowInsetTop();

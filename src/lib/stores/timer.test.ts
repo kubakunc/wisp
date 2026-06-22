@@ -84,6 +84,39 @@ describe('timer store', () => {
     expect(get(store).mode).toBe('off');
   });
 
+  it('calls onExpire when the timer fires', async () => {
+    const { adapter } = createFakeNativeAudio();
+    const engine = createAudioEngine(adapter);
+    let expired = 0;
+    const store = createTimerStore(engine, {
+      now: () => 0,
+      setTimer: () => 1,
+      clearTimer: () => {},
+      fadeMs: 0,
+      onExpire: () => { expired++; }
+    });
+    store.startPreset(15);
+    await store.fireNow();
+    expect(expired).toBe(1);
+  });
+
+  it('does NOT call onExpire on manual cancel', () => {
+    const { adapter } = createFakeNativeAudio();
+    const engine = createAudioEngine(adapter);
+    let expired = 0;
+    const store = createTimerStore(engine, {
+      now: () => 0,
+      setTimer: () => 1,
+      clearTimer: () => {},
+      fadeMs: 0,
+      onExpire: () => { expired++; }
+    });
+    store.startPreset(15);
+    store.cancel();
+    expect(expired).toBe(0);
+    expect(get(store).mode).toBe('off');
+  });
+
   it('constructs with production defaults (no injected deps)', () => {
     const { adapter } = createFakeNativeAudio();
     const engine = createAudioEngine(adapter);

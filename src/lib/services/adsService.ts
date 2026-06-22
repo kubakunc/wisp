@@ -13,6 +13,10 @@ export function createAdsService(adapter: AdMobAdapter, opts?: AdsServiceOpts) {
   const marginBottomPx = opts?.marginBottomPx ?? 0;
 
   let lastConsent: ConsentResult | null = null;
+  // The native plugin only applies the bottom margin when CREATING the banner
+  // view, so to move it (e.g. nav routes vs the full-screen player) we must
+  // remove and re-show it. Track the margin currently applied.
+  let shownMargin: number | null = null;
 
   return {
     /** Initialize AdMob and run the UMP consent flow. Returns the resolved consent result. */
@@ -25,17 +29,26 @@ export function createAdsService(adapter: AdMobAdapter, opts?: AdsServiceOpts) {
     /**
      * Show the banner ONLY when the user is not premium AND consent was obtained/not_required.
      * Premium users or unavailable consent → banner is removed (never shown or actively removed).
+     * `marginOverride` repositions the banner (defaults to the configured margin);
+     * a changed margin forces a remove+recreate so the new position takes effect.
      * Returns true when the banner is now visible, false when it was removed/hidden.
      */
-    async showIfEligible(isPremium: boolean): Promise<boolean> {
+    async showIfEligible(isPremium: boolean, marginOverride?: number): Promise<boolean> {
+      const margin = marginOverride ?? marginBottomPx;
       const canShow =
         !isPremium &&
         (lastConsent === 'obtained' || lastConsent === 'not_required');
 
       if (canShow) {
-        await adapter.showBanner({ adId, marginBottomPx });
+        if (shownMargin !== null && shownMargin !== margin) {
+          await adapter.removeBanner();
+          shownMargin = null;
+        }
+        await adapter.showBanner({ adId, marginBottomPx: margin });
+        shownMargin = margin;
       } else {
         await adapter.removeBanner();
+        shownMargin = null;
       }
 
       return canShow;

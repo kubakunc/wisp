@@ -9,6 +9,9 @@ export interface TimerDeps {
   setTimer?: (cb: () => void, ms: number) => TimerHandle;
   clearTimer?: (h: TimerHandle) => void;
   fadeMs?: number;
+  /** Called only when the timer actually EXPIRES (not on manual cancel), after
+   *  the fade-out completes — lets the app clear the active-sounds store. */
+  onExpire?: () => void;
 }
 
 const OFF: TimerState = { mode: 'off', durationSec: null, endsAt: null };
@@ -18,6 +21,7 @@ export function createTimerStore(engine: AudioEngine, deps: TimerDeps = {}) {
   const setTimer = deps.setTimer ?? ((cb, ms) => setTimeout(cb, ms));
   const clearTimer = deps.clearTimer ?? ((h) => clearTimeout(h as ReturnType<typeof setTimeout>));
   const fadeMs = deps.fadeMs ?? 30000;
+  const onExpire = deps.onExpire;
 
   const { subscribe, set } = writable<TimerState>({ ...OFF });
   let handle: TimerHandle | null = null;
@@ -37,6 +41,7 @@ export function createTimerStore(engine: AudioEngine, deps: TimerDeps = {}) {
       clear();
       await engine.fadeOutAll(fadeMs);
       set({ ...OFF });
+      onExpire?.();
     } finally {
       firing = false;
     }

@@ -1,9 +1,11 @@
 <script lang="ts">
-  let { open, selected, onPick, onStart, onClose }: {
+  let { open, active = false, onChoose, onCancel, onClose }: {
     open: boolean;
-    selected: number | 'custom' | 'until' | null;
-    onPick: (v: number | 'custom' | 'until') => void;
-    onStart: () => void;
+    /** Whether a sleep timer is currently running (enables "Turn off timer"). */
+    active?: boolean;
+    /** Start the chosen timer and close the sheet (no separate confirm step). */
+    onChoose: (kind: 'preset' | 'custom' | 'until', minutes?: number) => void;
+    onCancel?: () => void;
     onClose: () => void;
   } = $props();
 
@@ -12,40 +14,22 @@
   const CUSTOM_MIN = 1;
   const CUSTOM_MAX = 600;
 
-  // Local custom minutes — initialised to CUSTOM_DEFAULT; reset whenever the
-  // Custom chip is clicked (detected by selected transitioning to 'custom').
+  // Custom needs a number, so it reveals a stepper + a single confirm. Presets
+  // and "until" apply on tap.
+  let showCustom = $state(false);
   let customMinutes = $state(CUSTOM_DEFAULT);
 
-  // When the custom chip is selected, fire onPick with the default so the CTA
-  // reflects a concrete number straight away.
-  $effect(() => {
-    if (selected === 'custom') {
-      onPick(customMinutes);
-    }
-  });
-
+  function clampCustom(v: number): number {
+    return Math.min(CUSTOM_MAX, Math.max(CUSTOM_MIN, Math.round(v)));
+  }
   function handleCustomInput(e: Event) {
     const raw = (e.target as HTMLInputElement).valueAsNumber;
     if (!Number.isFinite(raw)) return;
-    const clamped = Math.min(CUSTOM_MAX, Math.max(CUSTOM_MIN, Math.round(raw)));
-    customMinutes = clamped;
-    onPick(clamped);
+    customMinutes = clampCustom(raw);
   }
-
   function stepCustom(delta: number) {
-    const next = Math.min(CUSTOM_MAX, Math.max(CUSTOM_MIN, customMinutes + delta));
-    customMinutes = next;
-    onPick(next);
+    customMinutes = clampCustom(customMinutes + delta);
   }
-
-  // CTA label — selected is either a number (preset or custom-chosen) or 'until'
-  // When selected === 'custom' the $effect above will call onPick(customMinutes)
-  // so selected should quickly become a number; guard for the brief interim state.
-  const ctaLabel = $derived(
-    typeof selected === 'number'
-      ? `Start timer · ${selected} min`
-      : 'Start timer'
-  );
 </script>
 
 {#if open}
@@ -74,26 +58,24 @@
       {#each PRESETS as preset}
         <button
           class="chip"
-          class:chip-selected={selected === preset}
-          aria-pressed={selected === preset}
           aria-label="{preset} min"
-          onclick={() => onPick(preset)}
+          onclick={() => onChoose('preset', preset)}
         >
           {preset}
         </button>
       {/each}
       <button
         class="chip"
-        class:chip-selected={selected === 'custom'}
-        aria-pressed={selected === 'custom'}
+        class:chip-selected={showCustom}
+        aria-pressed={showCustom}
         aria-label="Custom"
-        onclick={() => onPick('custom')}
+        onclick={() => (showCustom = true)}
       >
         Custom
       </button>
     </div>
 
-    {#if selected === 'custom' || (typeof selected === 'number' && !PRESETS.includes(selected as (typeof PRESETS)[number]))}
+    {#if showCustom}
       <div class="custom-stepper" role="group" aria-label="Custom duration">
         <button
           class="step-btn"
@@ -116,23 +98,19 @@
           onclick={() => stepCustom(5)}
         >+</button>
       </div>
+      <button class="cta" onclick={() => onChoose('custom', customMinutes)}>
+        Start timer · {customMinutes} min
+      </button>
     {/if}
 
-    <button
-      class="until-row"
-      onclick={() => onPick('until')}
-      aria-pressed={selected === 'until'}
-    >
+    <button class="until-row" onclick={() => onChoose('until')}>
       <span class="until-icon" aria-hidden="true">∞</span>
       Until I stop it
     </button>
 
-    <button
-      class="cta"
-      onclick={onStart}
-    >
-      {ctaLabel}
-    </button>
+    {#if active && onCancel}
+      <button class="turn-off" onclick={onCancel}>Turn off timer</button>
+    {/if}
   </div>
 {/if}
 
@@ -228,11 +206,6 @@
     font-family: var(--font-body);
   }
 
-  .until-row[aria-pressed='true'] {
-    background: rgba(124, 140, 240, 0.15);
-    border-color: rgba(124, 140, 240, 0.4);
-  }
-
   .until-icon {
     font-size: 18px;
     color: var(--muted);
@@ -254,6 +227,25 @@
 
   .cta:hover {
     opacity: 0.88;
+  }
+
+  .turn-off {
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--r-pill);
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-body);
+    transition: color 0.15s;
+    margin-top: -8px;
+  }
+
+  .turn-off:hover {
+    color: #ff9b9b;
   }
 
   /* Custom duration stepper */

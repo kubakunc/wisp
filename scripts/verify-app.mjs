@@ -276,14 +276,13 @@ await check('now-playing: timer sheet opens', async () => {
   const open = await page.evaluate(() => /15 min|30 min|45 min|Until/i.test(document.body.textContent));
   return { pass: open };
 });
-await check('now-playing: start preset timer', async () => {
+await check('now-playing: tapping a preset starts the timer (instant)', async () => {
   await inject();
   await page.evaluate(() => window.__t.clickSel('[aria-label="15 min"]'));
-  await sleep(300);
-  await page.evaluate(() => window.__t.clickText('Start timer', 'button'));
   await sleep(700);
   const running = await page.evaluate(() => /left/i.test(document.body.textContent));
-  return { pass: running, label: await page.evaluate(() => (window.__t.byText('left', 'button') || {}).textContent || '') };
+  const sheetClosed = await page.evaluate(() => !/Sleep timer/.test(document.body.textContent));
+  return { pass: running && sheetClosed, running, sheetClosed };
 });
 await check('now-playing: save mix', async () => {
   await inject();

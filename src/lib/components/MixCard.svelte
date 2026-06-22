@@ -9,11 +9,13 @@
     onDelete: () => void;
   } = $props();
 
+  // Title is the sounds being mixed (not a generic "My Mix" name).
   const layerNames = $derived(
     mix.layers
       .map((l) => getSound(l.soundId)?.name ?? l.soundId)
       .join(', ')
   );
+  const soundCount = $derived(mix.layers.length);
 </script>
 
 <div class="mix-card" class:playing>
@@ -28,14 +30,14 @@
         </div>
       </div>
     {/if}
-    <span class="mix-name">{mix.name}</span>
-    <span class="layer-names">{layerNames}</span>
+    <span class="mix-name">{layerNames}</span>
+    <span class="layer-names">{soundCount} sound{soundCount === 1 ? '' : 's'}</span>
   </div>
 
   <div class="card-actions">
     <button
       class="play-btn"
-      aria-label={playing ? `Pause ${mix.name}` : `Play ${mix.name}`}
+      aria-label={playing ? `Pause ${layerNames}` : `Play ${layerNames}`}
       aria-pressed={playing}
       onclick={onPlay}
     >
@@ -51,7 +53,7 @@
       {/if}
     </button>
 
-    <button class="delete-btn" aria-label="Delete {mix.name}" onclick={onDelete}>
+    <button class="delete-btn" aria-label="Delete mix: {layerNames}" onclick={onDelete}>
       <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="3 6 5 6 21 6"/>
         <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>

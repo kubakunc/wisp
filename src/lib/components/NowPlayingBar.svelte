@@ -57,8 +57,8 @@
     align-items: center;
     gap: 12px;
     padding: 10px 16px;
-    background: rgba(35, 40, 74, 0.9);
-    backdrop-filter: blur(16px);
+    /* Purple "now playing" treatment, matching the favourite-mix hero card. */
+    background: var(--accent-grad);
     border-radius: 16px;
     cursor: pointer;
   }
@@ -67,19 +67,19 @@
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: rgba(124, 140, 240, 0.18);
+    background: rgba(12, 18, 38, 0.18);
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--accent-1);
+    color: var(--on-accent);
     flex-shrink: 0;
     transition: background 0.15s;
   }
 
   .play-pause:hover {
-    background: rgba(124, 140, 240, 0.28);
+    background: rgba(12, 18, 38, 0.3);
   }
 
   .info {
@@ -92,8 +92,8 @@
 
   .title {
     font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
+    font-weight: 700;
+    color: var(--on-accent);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -101,7 +101,7 @@
 
   .sub {
     font-size: 12px;
-    color: var(--muted);
+    color: rgba(12, 18, 38, 0.7);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -119,7 +119,7 @@
     display: block;
     width: 3px;
     border-radius: 2px;
-    background: var(--accent-1);
+    background: rgba(12, 18, 38, 0.65);
     transform-origin: bottom;
     animation: wispBar 0.8s ease-in-out infinite alternate;
   }

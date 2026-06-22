@@ -4,15 +4,17 @@
   import { page } from '$app/stores';
   import { app, RC_API_KEY } from '$lib/app';
   import { BANNER_HEIGHT_PX, NAV_HEIGHT_PX } from '$lib/ads/config';
+  import { modalOpen } from '$lib/stores/ui';
   import BottomNav from '$lib/components/BottomNav.svelte';
 
   const { children } = $props();
 
-  const { sounds, timer, subscription, analytics, ads } = app;
+  const { subscription, analytics, ads } = app;
   const { isPremium } = subscription;
 
   const pathname = $derived($page.url.pathname);
   const isFullScreen = $derived(pathname === '/now-playing' || pathname === '/paywall');
+  const onPaywall = $derived(pathname === '/paywall');
 
   const activeTab = $derived(
     (pathname.startsWith('/mixes')
@@ -22,10 +24,14 @@
         : 'sounds') as 'sounds' | 'mixes' | 'settings'
   );
 
-  // The native AdMob banner anchors to the bottom edge (and on Android 15+ the plugin
-  // forces it there). So the bottom nav is lifted ABOVE the banner, and content is
-  // padded for nav + banner (+ the device's bottom safe-area inset).
-  const bannerVisible = $derived(!isFullScreen && $ads.bannerVisible);
+  // Ads show for free users on every route EXCEPT the paywall (including the
+  // full-screen player), and are suppressed while a modal sheet is open.
+  // Deterministic so the reserved space + framed slot stay in sync with what the
+  // user sees (vs. the async $ads.bannerVisible store).
+  const showAds = $derived(!$isPremium && !onPaywall && !$modalOpen);
+  // Native banner margin: lifted above the bottom nav on normal routes; pinned
+  // to the bottom on the full-screen player (which has no nav).
+  const bannerMargin = $derived(isFullScreen ? 0 : NAV_HEIGHT_PX);
 
   // Analytics: fire screen() on route change
   $effect(() => {
@@ -38,25 +44,29 @@
   // Re-syncs on route change and entitlement change.
   $effect(() => {
     const premium = $isPremium;
-    const full = isFullScreen;
-    if (full) {
+    const paywall = onPaywall;
+    const margin = bannerMargin;
+    const modal = $modalOpen;
+    if (paywall || modal) {
       ads.hide().catch(() => {});
     } else {
-      ads.sync(premium).catch(() => {});
+      ads.sync(premium, margin).catch(() => {});
     }
-  });
-
-  // Timer: clear sounds when timer resets to 'off' after firing
-  let prevMode = $state<string>('off');
-  $effect(() => {
-    const t = $timer;
-    if (prevMode !== 'off' && t.mode === 'off') {
-      sounds.stopAll().catch(() => {});
-    }
-    prevMode = t.mode;
   });
 
   onMount(async () => {
+    // Status bar: don't draw the WebView under it (Android WebView doesn't
+    // populate env(safe-area-inset-top) reliably), so the system clock/icons
+    // stay visible. Light icons on our dark background.
+    try {
+      const { StatusBar, Style } = await import('@capacitor/status-bar');
+      await StatusBar.setOverlaysWebView({ overlay: false });
+      await StatusBar.setStyle({ style: Style.Dark });
+      await StatusBar.setBackgroundColor({ color: '#0a0e1c' });
+    } catch {
+      // Not in Capacitor / running in browser
+    }
+
     await subscription.init(RC_API_KEY).catch(() => {});
     await ads.init().catch(() => {});
     await ads.sync($isPremium).catch(() => {});
@@ -75,11 +85,33 @@
 
 <div
   class="shell"
-  class:has-banner={bannerVisible}
+  class:has-banner={showAds && !isFullScreen}
+  class:full={isFullScreen}
   style="--nav-h:{NAV_HEIGHT_PX}px; --banner-h:{BANNER_HEIGHT_PX}px"
 >
   {@render children()}
 </div>
+
+{#if showAds}
+  <!-- Framed ad card: an "AD / Remove ads" header above the slot where the
+       native AdMob banner is anchored (it overlays the slot's placeholder).
+       --ad-bottom matches the native banner margin so the box sits over it.
+       Vars are repeated here because this is a SIBLING of .shell (custom
+       properties don't cross between siblings). -->
+  <div class="ad-frame" style="--nav-h:{NAV_HEIGHT_PX}px; --banner-h:{BANNER_HEIGHT_PX}px; --ad-bottom:{bannerMargin}px">
+    <div class="ad-head">
+      <span class="ad-tag">AD</span>
+      <a class="remove-ads" href="/paywall" aria-label="Remove ads — go Premium">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 7l4.5 4L12 5l4.5 6L21 7l-1.8 11H4.8z"/>
+        </svg>
+        Remove ads
+      </a>
+    </div>
+    <!-- The native AdMob banner overlays this slot. -->
+    <div class="ad-slot" aria-hidden="true"></div>
+  </div>
+{/if}
 
 {#if !isFullScreen}
   <div class="nav-bar">
@@ -99,7 +131,13 @@
     padding-bottom: var(--content-bottom);
   }
   .shell.has-banner {
-    --content-bottom: calc(var(--nav-h) + var(--banner-h) + env(safe-area-inset-bottom, 0px));
+    --content-bottom: calc(var(--nav-h) + var(--wisp-ad-box-h) + env(safe-area-inset-bottom, 0px));
+  }
+  /* Full-screen routes (now-playing, paywall) have no bottom nav/banner, so they
+     must NOT reserve that space — otherwise the page gains phantom scroll height
+     and its content can scroll up under the status bar. */
+  .shell.full {
+    --content-bottom: 0px;
   }
 
   /* Menu sits at the very bottom; the native banner is anchored one nav-height up,
@@ -112,5 +150,52 @@
     z-index: 100;
     background: var(--bg-bot);
     /* BottomNav owns its own safe-area inset padding; don't double it here. */
+  }
+
+  /* Framed ad card. --ad-bottom matches the native banner margin so the native
+     overlay (which always renders above the WebView) sits inside the slot. */
+  .ad-frame {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(var(--ad-bottom, 0px) + env(safe-area-inset-bottom, 0px));
+    width: min(400px, 94%);
+    height: var(--wisp-ad-box-h);
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid rgba(124, 140, 240, 0.18);
+    border-radius: 16px;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+  }
+  .ad-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 12px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .ad-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--muted-2);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+  .remove-ads {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-1);
+    text-decoration: none;
+  }
+  .ad-slot {
+    flex: 1;
   }
 </style>

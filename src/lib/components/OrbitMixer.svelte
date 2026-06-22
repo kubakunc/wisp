@@ -107,8 +107,8 @@
       <button
         class="add-node"
         style="
-          left:{160 + 110 * Math.cos((angleForIndex(layers.length, layers.length + 1) - 90) * Math.PI / 180)}px;
-          top:{160 + 110 * Math.sin((angleForIndex(layers.length, layers.length + 1) - 90) * Math.PI / 180)}px;
+          left:{50 + 34.375 * Math.cos((angleForIndex(layers.length, layers.length + 1) - 90) * Math.PI / 180)}%;
+          top:{50 + 34.375 * Math.sin((angleForIndex(layers.length, layers.length + 1) - 90) * Math.PI / 180)}%;
         "
         aria-label="Add a sound"
         onclick={onAdd}

@@ -2,6 +2,8 @@
   import { goto } from '$app/navigation';
   import { app } from '$lib/app';
   import { getSound } from '$lib/sounds/registry';
+  import { FREE_MIX_LIMIT } from '$lib/stores/savedMixes';
+  import { modalOpen } from '$lib/stores/ui';
   import { WispEvent } from '$lib/analytics/events';
   import OrbitMixer from '$lib/components/OrbitMixer.svelte';
   import VolumeSlider from '$lib/components/VolumeSlider.svelte';
@@ -71,44 +73,44 @@
     timerLabel ? `${timerLabel} left` : 'Timer'
   );
 
-  // Timer sheet state
+  // Timer sheet state. Choosing an option starts the timer and closes the sheet
+  // immediately — there's no separate "save/start" step.
   let sheetOpen = $state(false);
-  let sheetSelected = $state<number | 'custom' | 'until' | null>(null);
-  let isCustomFlow = $state(false);
 
-  function handleTimerPick(v: number | 'custom' | 'until') {
-    if (v === 'custom') {
-      isCustomFlow = true;
-      sheetSelected = 'custom';
-    } else {
-      if (typeof v === 'number') isCustomFlow = false;
-      sheetSelected = v;
-    }
-  }
+  // Suppress ads (DOM card + native banner) while the timer sheet is open.
+  $effect(() => {
+    modalOpen.set(sheetOpen);
+    return () => modalOpen.set(false);
+  });
 
-  function handleTimerStart() {
-    if (sheetSelected === null) return;
-    if (sheetSelected === 'until') {
+  function handleTimerChoose(kind: 'preset' | 'custom' | 'until', minutes = 0) {
+    if (kind === 'until') {
       timer.startUntilStop();
-    } else if (typeof sheetSelected === 'number' && isCustomFlow) {
-      timer.startCustom(sheetSelected);
-    } else if (typeof sheetSelected === 'number') {
-      timer.startPreset(sheetSelected);
+    } else if (kind === 'custom') {
+      timer.startCustom(minutes);
     } else {
-      return;
+      timer.startPreset(minutes);
     }
-    analytics.track(WispEvent.timerStart, {
-      mode: isCustomFlow ? 'custom' : typeof sheetSelected === 'number' ? 'preset' : sheetSelected
-    }).catch(() => {});
+    analytics.track(WispEvent.timerStart, { mode: kind }).catch(() => {});
     sheetOpen = false;
   }
 
-  // Save mix
+  // Save mix. Free users may keep only FREE_MIX_LIMIT saved mixes; beyond that
+  // the Save button locks and routes to the paywall instead of erroring.
   let saveError = $state('');
   let saved = $state(false);
+  const saveLocked = $derived(!$isPremium && $mixes.length >= FREE_MIX_LIMIT);
+
+  function goPaywallForSave() {
+    analytics.track(WispEvent.paywallView, { source: 'save_lock' }).catch(() => {});
+    goto('/paywall');
+  }
 
   function handleSave() {
-    mixes.save('My Mix', sounds.currentLayers(), $isPremium)
+    // Name the mix after the sounds it layers, not a generic "My Mix".
+    const names = sounds.currentLayers().map((l) => getSound(l.soundId)?.name ?? l.soundId);
+    const mixName = names.slice(0, 3).join(', ') + (names.length > 3 ? '…' : '');
+    mixes.save(mixName || 'Mix', sounds.currentLayers(), $isPremium)
       .then(() => {
         analytics.track(WispEvent.mixSave).catch(() => {});
         saveError = '';
@@ -148,12 +150,16 @@
     goto('/');
   }
 
-  function clearTimer() {
-    menuOpen = false;
+  function cancelTimer() {
     timer.cancel();
+    sheetOpen = false;
   }
 
   const isPlaying = $derived(activeCount > 0 && !$soundsPaused);
+
+  // Free users see the ad box at the bottom of the player too; reserve space so
+  // it never covers the Timer/Save actions.
+  const showAd = $derived(!$isPremium);
 
   // Dismiss with a downward "collapse" animation, then navigate home.
   let dismissing = $state(false);
@@ -164,7 +170,7 @@
   }
 </script>
 
-<div class="now-playing" class:single={isSingle} class:collapsing={dismissing}>
+<div class="now-playing" class:single={isSingle} class:collapsing={dismissing} class:has-ad={showAd}>
   <!-- Header -->
   <header class="np-header">
     <button class="icon-btn" aria-label="Minimize" onclick={minimize}>
@@ -185,9 +191,6 @@
       {#if menuOpen}
         <div class="more-menu" role="menu">
           <button class="menu-item" role="menuitem" onclick={stopAll}>Stop all sounds</button>
-          {#if $timer.mode !== 'off'}
-            <button class="menu-item" role="menuitem" onclick={clearTimer}>Clear sleep timer</button>
-          {/if}
         </div>
       {/if}
     </div>
@@ -301,12 +304,30 @@
       {timerPillLabel}
     </button>
 
-    <button class="pill pill-ghost" onclick={handleSave} aria-label="Save mix">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-      </svg>
-      {saved ? 'Saved ✓' : 'Save'}
-    </button>
+    {#if saved}
+      <!-- Confirmation wins for its brief window, even if saving just hit the
+           free limit (otherwise the button would jump straight to locked). -->
+      <button class="pill pill-ghost" aria-label="Mix saved">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Saved ✓
+      </button>
+    {:else if saveLocked}
+      <button class="pill pill-ghost" onclick={goPaywallForSave} aria-label="Save mix — Premium required">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Save
+      </button>
+    {:else}
+      <button class="pill pill-ghost" onclick={handleSave} aria-label="Save mix">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+        </svg>
+        Save
+      </button>
+    {/if}
   </div>
 
   {#if saveError === 'FREE_MIX_LIMIT'}
@@ -317,9 +338,9 @@
 
   <TimerSheet
     open={sheetOpen}
-    selected={sheetSelected}
-    onPick={handleTimerPick}
-    onStart={handleTimerStart}
+    active={$timer.mode !== 'off'}
+    onChoose={handleTimerChoose}
+    onCancel={cancelTimer}
     onClose={() => (sheetOpen = false)}
   />
 </div>
@@ -348,6 +369,10 @@
   @media (prefers-reduced-motion: reduce) {
     .now-playing { animation: none; transition: none; }
     .now-playing.collapsing { transform: none; opacity: 1; }
+  }
+  /* Reserve room for the bottom ad box (free users) so it never covers actions. */
+  .now-playing.has-ad {
+    padding-bottom: calc(110px + var(--wisp-ad-box-h) + env(safe-area-inset-bottom, 0px));
   }
 
   .np-header {
@@ -475,6 +500,10 @@
   .bottom-actions {
     position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 30px); left: 0; right: 0;
     display: flex; align-items: center; justify-content: center; gap: 14px; z-index: 10;
+  }
+  /* Lift the actions above the ad box when it's shown. */
+  .now-playing.has-ad .bottom-actions {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 30px + var(--wisp-ad-box-h));
   }
   .pill { padding: 13px 22px; border-radius: var(--r-pill); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; border: none; transition: opacity 0.15s; }
   .pill:hover { opacity: 0.85; }

@@ -24,10 +24,11 @@ export function createAdsStore(svc: AdsService) {
 
     /**
      * Sync banner visibility with the user's premium status.
-     * Calls showIfEligible and updates bannerVisible from the service's returned boolean.
+     * `marginPx` optionally repositions the banner (e.g. above the nav vs at the
+     * bottom of the full-screen player). Updates bannerVisible from the result.
      */
-    async sync(isPremium: boolean): Promise<void> {
-      const bannerVisible = await svc.showIfEligible(isPremium);
+    async sync(isPremium: boolean, marginPx?: number): Promise<void> {
+      const bannerVisible = await svc.showIfEligible(isPremium, marginPx);
       update((s) => ({ ...s, bannerVisible }));
     },
 

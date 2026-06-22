@@ -13,12 +13,13 @@
   const sound = $derived(getSound(id));
   const label = $derived(sound ? sound.name : id);
 
-  // Orbit radius in px (parent is 320×320, orb is center 160,160)
-  const RADIUS = 110;
+  // Orbit radius as a fraction of the (square, responsive) stage so nodes stay
+  // on the ring at any width. 110/320 ≈ 0.34375 → 34.375% from centre.
+  const RADIUS_PCT = 34.375;
 
   const rad = $derived((angleDeg - 90) * (Math.PI / 180));
-  const cx = $derived(160 + RADIUS * Math.cos(rad));
-  const cy = $derived(160 + RADIUS * Math.sin(rad));
+  const cxPct = $derived(50 + RADIUS_PCT * Math.cos(rad));
+  const cyPct = $derived(50 + RADIUS_PCT * Math.sin(rad));
 
   // Border brightness ∝ volume
   const borderAlpha = $derived(0.2 + volume * 0.6);
@@ -28,8 +29,8 @@
   class="orbit-node"
   class:selected
   style="
-    left:{cx}px;
-    top:{cy}px;
+    left:{cxPct}%;
+    top:{cyPct}%;
     --border-alpha:{borderAlpha};
   "
   aria-label={label}
