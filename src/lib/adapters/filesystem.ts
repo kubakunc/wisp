@@ -83,6 +83,7 @@ export const filesystemAdapter: FilesystemAdapter = {
       const { files } = await Filesystem.readdir({ path: relativeDir, directory: Directory.Data });
       let total = 0;
       for (const f of files) {
+        if (typeof f !== 'string' && f.type === 'directory') continue;
         // ReaddirResult.files is FileInfo[] in v8 (objects with .name), not strings.
         // The brief includes a typeof guard for forward-compat; we keep it as a documented narrow cast.
         const name = typeof f === 'string' ? f : f.name;
