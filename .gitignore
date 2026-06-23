@@ -15,3 +15,6 @@ store-assets/**/*.png
 # Downloadable sounds (uploaded to VITE_SOUND_CDN; regenerate via scripts/generate-sounds.mjs)
 cdn-sounds/
 processed-sounds/
+android/keystore.properties
+android/*.keystore
+*.keystore
