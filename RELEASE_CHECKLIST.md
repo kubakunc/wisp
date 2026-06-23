@@ -35,11 +35,10 @@ cd android && ./gradlew bundleRelease    # -> app/build/outputs/bundle/release/a
      (`ca-app-pub-3940256099942544~3347511713`).
    - Banner unit `TEST_BANNER_AD_ID` in `src/lib/ads/config.ts`.
    Replace both with the real AdMob app ID + ad unit ID.
-3. **Firebase / Analytics** — no `google-services.json` in `android/app/`. The one
-   provided was for a different app (`com.velologiclabs.gpxexporter`). Drop the
-   **Wisp** `google-services.json` (package `com.velologiclabs.wisp`) into
-   `android/app/`; the Gradle plugin auto-applies it. Until then analytics
-   (incl. the new `sound_played` / `mix_played` events) no-ops on device.
+3. ✅ **Firebase / Analytics** — DONE. `android/app/google-services.json` added
+   (project `wisp-47e62`, package `com.velologiclabs.wisp`); the Gradle plugin
+   applies and the release AAB builds with it. Analytics (incl. the new
+   `sound_played` / `mix_played` events) now flow to Firebase on device.
 4. **Removed sounds** — `boat` (Creaking Boat) and `meadow` (Summer Meadow) had no
    uploaded audio, so they were removed from `src/lib/sounds/sounds.json` for the
    release. Re-add them (with bucket `.ogg` files) when their audio is ready.
