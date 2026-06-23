@@ -40,10 +40,9 @@ cd android && ./gradlew bundleRelease    # -> app/build/outputs/bundle/release/a
    **Wisp** `google-services.json` (package `com.velologiclabs.wisp`) into
    `android/app/`; the Gradle plugin auto-applies it. Until then analytics
    (incl. the new `sound_played` / `mix_played` events) no-ops on device.
-4. **Missing sounds** — `boat` (Creaking Boat) and `meadow` (Summer Meadow) have
-   no uploaded audio (placeholder `*.wav` in `sounds.json`); they'll show
-   "Couldn't download". Either upload + map their files in the bucket, or remove
-   the two entries from `src/lib/sounds/sounds.json`.
+4. **Removed sounds** — `boat` (Creaking Boat) and `meadow` (Summer Meadow) had no
+   uploaded audio, so they were removed from `src/lib/sounds/sounds.json` for the
+   release. Re-add them (with bucket `.ogg` files) when their audio is ready.
 
 ## Store listing (todo on Play Console)
 

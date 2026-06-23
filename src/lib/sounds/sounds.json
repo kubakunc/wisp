@@ -1,5 +1,5 @@
 {
-  "$comment": "Wisp sound catalogue. Edit this file to add/rename sounds or change pricing. 'file' is the audio filename dropped into static/sounds/ (resolves at runtime as sounds/<file>). 'premium': true = Pro (locked on free tier), false = free. 'category' drives the icon (noise|nature). 'bundled': true ships in the app; false is downloaded on first use from VITE_SOUND_CDN. Noise colors ship as generated .wav; nature sounds are royalty-free .mp3 you provide.",
+  "$comment": "Wisp sound catalogue. 'file' is the audio filename: bundled noise colors ship in the app as generated .wav under static/sounds/; nature/premium sounds are downloaded on first use from VITE_SOUND_CDN as gapless .ogg (Opus) loops. 'premium': true = Pro (locked on free tier). 'bundled': true ships in the app. 'category' drives the icon (noise|nature).",
   "sounds": [
     {
       "id": "white-noise",
@@ -240,22 +240,6 @@
       "premium": true,
       "bundled": false,
       "file": "freesound_community-highway-14475.ogg"
-    },
-    {
-      "id": "boat",
-      "name": "Creaking Boat",
-      "category": "nature",
-      "premium": true,
-      "bundled": false,
-      "file": "boat.wav"
-    },
-    {
-      "id": "meadow",
-      "name": "Summer Meadow",
-      "category": "nature",
-      "premium": true,
-      "bundled": false,
-      "file": "meadow.wav"
     }
   ]
 }

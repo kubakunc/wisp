@@ -8,7 +8,8 @@ export interface PlaybackMetricsDeps {
   track: Track;
   /** Wall clock in ms (injectable for tests). */
   now?: () => number;
-  /** Whether a sound is Pro (injectable for tests). */
+  /** Whether a sound is Pro-tier in the catalogue (NOT the listener's
+   *  entitlement) — i.e. "is this a premium sound". Injectable for tests. */
   isPremium?: (soundId: string) => boolean;
   /** Segments shorter than this (seconds) are ignored as noise. */
   minSeconds?: number;
