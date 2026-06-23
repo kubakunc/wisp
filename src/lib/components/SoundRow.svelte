@@ -62,7 +62,7 @@
       <span class="name-row">
         <span class="name">{sound.name}</span>
         {#if featured}
-          <span class="featured-badge">✨ Free this week</span>
+          <span class="featured-badge">Free this week</span>
         {/if}
       </span>
       {#if locked}
@@ -211,8 +211,9 @@
   /* This week's free featured premium sound — warm gold so it reads as special,
      distinct from the blue accent and purple Premium styling. */
   .sound-row.featured {
-    border-color: rgba(245, 196, 81, 0.55);
-    background: linear-gradient(160deg, rgba(245, 196, 81, 0.10), rgba(26, 31, 60, 0.6));
+    /* Solid gold frame — a low-alpha border washed out on the phone's AMOLED. */
+    border: 1.5px solid #e9b949;
+    background: linear-gradient(160deg, rgba(245, 196, 81, 0.14), rgba(26, 31, 60, 0.6));
   }
   .name-row {
     display: flex;

@@ -3,7 +3,8 @@ import { remoteUrl, buildRemoteUrl, normalizeCdnBase } from './remote';
 
 describe('remote sound config', () => {
   it('builds a relative sounds/<file> path when no CDN is configured', () => {
-    expect(remoteUrl('rain.wav')).toBe('sounds/rain.wav');
+    // Pure check (independent of any .env CDN the dev/test machine may set).
+    expect(buildRemoteUrl('', 'rain.wav')).toBe('sounds/rain.wav');
   });
   it('joins with exactly one slash regardless of base trailing slash', () => {
     // remoteUrl must never produce a double slash between base and file

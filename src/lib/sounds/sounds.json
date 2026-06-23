@@ -31,7 +31,7 @@
       "category": "nature",
       "premium": false,
       "bundled": false,
-      "file": "rain.wav"
+      "file": "soundreality-rain-sound-550289.ogg"
     },
     {
       "id": "ocean",
@@ -39,7 +39,7 @@
       "category": "nature",
       "premium": false,
       "bundled": false,
-      "file": "ocean.wav"
+      "file": "rmultimediaeu-ocean-waves-250310.ogg"
     },
     {
       "id": "fan",
@@ -47,7 +47,7 @@
       "category": "nature",
       "premium": false,
       "bundled": false,
-      "file": "fan.wav"
+      "file": "freesound_community-desk-fan-66784.ogg"
     },
     {
       "id": "forest",
@@ -55,7 +55,7 @@
       "category": "nature",
       "premium": false,
       "bundled": false,
-      "file": "forest.wav"
+      "file": "audiopapkin-forest-ambience-296528.ogg"
     },
     {
       "id": "stream",
@@ -63,7 +63,7 @@
       "category": "nature",
       "premium": false,
       "bundled": false,
-      "file": "stream.wav"
+      "file": "soundreality-stream-nature-445380.ogg"
     },
     {
       "id": "blue-noise",
@@ -71,7 +71,7 @@
       "category": "noise",
       "premium": true,
       "bundled": false,
-      "file": "blue-noise.wav"
+      "file": "dreamingrelaxation-blue-noise-by-digitalspa-250234.ogg"
     },
     {
       "id": "grey-noise",
@@ -79,7 +79,7 @@
       "category": "noise",
       "premium": true,
       "bundled": false,
-      "file": "grey-noise.wav"
+      "file": "dreamingrelaxation-grey-noise-by-digitalspa-170338.ogg"
     },
     {
       "id": "thunder",
@@ -87,7 +87,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "loswin23-thunderstorm-2-516370.mp3"
+      "file": "loswin23-thunderstorm-2-516370.ogg"
     },
     {
       "id": "heavy-rain",
@@ -95,7 +95,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "heavy-rain.wav"
+      "file": "kanematsutei-heavy-rain-144282.ogg"
     },
     {
       "id": "rain-on-tent",
@@ -103,7 +103,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "rain-on-tent.wav"
+      "file": "freesound_community-rain-on-canvas-tent-23607.ogg"
     },
     {
       "id": "campfire",
@@ -111,7 +111,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "soundreality-fire-crackling-sound-499636.mp3"
+      "file": "soundreality-fire-crackling-sound-499636.ogg"
     },
     {
       "id": "wind",
@@ -119,7 +119,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "wind.wav"
+      "file": "freesound_community-howling-wind-14499.ogg"
     },
     {
       "id": "waterfall",
@@ -127,7 +127,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "waterfall.wav"
+      "file": "soundsforyou-waterfall-ambient-sounds-116395.ogg"
     },
     {
       "id": "crickets",
@@ -135,7 +135,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "crickets.wav"
+      "file": "u_s8g68hg8n6-cricket-on-a-summer-night-_-cricket-sound-341501.ogg"
     },
     {
       "id": "night-frogs",
@@ -143,7 +143,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "night-frogs.wav"
+      "file": "freesound_community-frogs-at-night-52041.ogg"
     },
     {
       "id": "birdsong",
@@ -151,7 +151,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "birdsong.wav"
+      "file": "djartmusic-beautiful-blackbird-singing_3-302660.ogg"
     },
     {
       "id": "cafe",
@@ -159,7 +159,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "freesound_community-coffee-shop-chatter-61978.mp3"
+      "file": "freesound_community-coffee-shop-chatter-61978.ogg"
     },
     {
       "id": "train",
@@ -167,7 +167,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "kokoreli777-inside-old-train-169418.mp3"
+      "file": "kokoreli777-inside-old-train-169418.ogg"
     },
     {
       "id": "heartbeat",
@@ -175,7 +175,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "heartbeat.wav"
+      "file": "u_akyu645azf-heartbeat-sound-effects-for-you-122458.ogg"
     },
     {
       "id": "whale",
@@ -183,7 +183,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "freesound_community-diving-with-whales-79257.mp3"
+      "file": "freesound_community-diving-with-whales-79257.ogg"
     },
     {
       "id": "wind-chimes",
@@ -191,7 +191,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "wind-chimes.wav"
+      "file": "soundsforyou-wind-chimes-bells-115747.ogg"
     },
     {
       "id": "snow",
@@ -199,7 +199,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "snow.wav"
+      "file": "tanweraman-blizzard-445020.ogg"
     },
     {
       "id": "underwater",
@@ -207,7 +207,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "underwater.wav"
+      "file": "dragon-studio-underwater-sounds-376891.ogg"
     },
     {
       "id": "space",
@@ -215,7 +215,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "kave_msri-deep-space-travel-background-noise-313946.mp3"
+      "file": "kave_msri-deep-space-travel-background-noise-313946.ogg"
     },
     {
       "id": "fireplace",
@@ -223,7 +223,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "freesound_community-nighttime-outdoor-fireplace-70583.mp3"
+      "file": "freesound_community-nighttime-outdoor-fireplace-70583.ogg"
     },
     {
       "id": "dryer",
@@ -231,7 +231,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "freesound_community-multiple-clothing-dryers-in-a-laundromat-34291.mp3"
+      "file": "freesound_community-multiple-clothing-dryers-in-a-laundromat-34291.ogg"
     },
     {
       "id": "highway",
@@ -239,7 +239,7 @@
       "category": "nature",
       "premium": true,
       "bundled": false,
-      "file": "freesound_community-highway-14475.mp3"
+      "file": "freesound_community-highway-14475.ogg"
     },
     {
       "id": "boat",

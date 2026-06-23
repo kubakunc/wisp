@@ -3,6 +3,13 @@ import { get } from 'svelte/store';
 import { createDownloadsStore } from './downloads';
 import { createSoundCacheService } from '$lib/services/soundCacheService';
 import { createFakeFilesystem } from '$lib/adapters/fakes/fakeFilesystem';
+import { getSound } from '$lib/sounds/registry';
+import { remoteUrl } from '$lib/sounds/remote';
+
+// Derive paths from the catalogue so the test survives sound-file renames.
+// RAIN_PATH is the local cache path; the download URL comes from remoteUrl().
+const RAIN_FILE = getSound('rain')!.file;
+const RAIN_PATH = `sounds/${RAIN_FILE}`;
 
 function make(opts?: Parameters<typeof createFakeFilesystem>[0]) {
   const { adapter } = createFakeFilesystem(opts);
@@ -25,7 +32,7 @@ describe('downloads store', () => {
   it('remote sound goes downloading → ready with progress 1', async () => {
     const s = make();
     const uri = await s.ensure('rain');
-    expect(uri).toMatch(/rain\.wav$/);
+    expect(uri.endsWith(RAIN_FILE)).toBe(true);
     const e = s.stateOf('rain');
     expect(e.status).toBe('ready');
     expect(e.progress).toBe(1);
@@ -34,7 +41,7 @@ describe('downloads store', () => {
   it('failure sets error and is retriable', async () => {
     const okFs = createFakeFilesystem();
     // first a failing service, then a working one is overkill; use failUrls then clear:
-    const s = make({ failUrls: ['sounds/rain.wav'] });
+    const s = make({ failUrls: [remoteUrl(RAIN_FILE)] });
     await expect(s.ensure('rain')).rejects.toThrow();
     expect(s.stateOf('rain').status).toBe('error');
     void okFs;
@@ -48,6 +55,6 @@ describe('downloads store', () => {
     const s = createDownloadsStore(createSoundCacheService(adapter));
     await Promise.all([s.ensure('rain'), s.ensure('rain'), s.ensure('rain')]);
     expect(downloads).toBe(1);
-    expect(state.files['sounds/rain.wav']).toBeGreaterThan(0);
+    expect(state.files[RAIN_PATH]).toBeGreaterThan(0);
   });
 });
