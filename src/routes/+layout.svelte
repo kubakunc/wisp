@@ -12,7 +12,7 @@
 
   const { children } = $props();
 
-  const { sounds, timer, subscription, analytics, ads } = app;
+  const { sounds, timer, subscription, analytics, ads, playbackMetrics } = app;
   const { isPremium } = subscription;
   const soundsPaused = sounds.paused;
 
@@ -95,11 +95,15 @@
     await ads.init().catch(() => {});
     await ads.sync($isPremium).catch(() => {});
 
-    // Capacitor App resume: refresh entitlement
+    // Capacitor App lifecycle: refresh entitlement on resume; flush playback
+    // duration metrics when backgrounded (the app may be killed in the background).
     try {
       const { App: CapApp } = await import('@capacitor/app');
       CapApp.addListener('resume', () => {
         subscription.refresh().catch(() => {});
+      });
+      CapApp.addListener('pause', () => {
+        playbackMetrics.flush();
       });
     } catch {
       // Not in Capacitor / running in browser

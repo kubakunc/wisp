@@ -10,6 +10,7 @@ import { createSubscriptionService } from '$lib/services/subscriptionService';
 import { createAnalyticsService } from '$lib/services/analyticsService';
 import { createAdsService } from '$lib/services/adsService';
 import { createSoundCacheService } from '$lib/services/soundCacheService';
+import { createPlaybackMetrics } from '$lib/services/playbackMetrics';
 import { NAV_HEIGHT_PX } from '$lib/ads/config';
 import { createActiveSoundsStore } from '$lib/stores/activeSounds';
 import { createSavedMixesStore } from '$lib/stores/savedMixes';
@@ -58,7 +59,28 @@ export function createApp(deps: AppDeps = {}) {
   const subscription = createSubscriptionStore(subscriptionSvc);
   const ads = createAdsStore(adsSvc);
 
-  return { engine, sounds, mixes, timer, subscription, analytics, ads, soundCache, downloads };
+  // Playback duration metrics: accumulate per-sound and per-combination listening
+  // time and emit it (sound_played / mix_played) when playback stops or flushes.
+  const playbackMetrics = createPlaybackMetrics({
+    track: (event, params) => void analytics.track(event, params).catch(() => {})
+  });
+  let metricActive: string[] = [];
+  let metricPaused = false;
+  const syncMetrics = () =>
+    playbackMetrics.sync(metricActive, metricActive.length > 0 && !metricPaused);
+  sounds.subscribe((m) => {
+    metricActive = Object.keys(m);
+    syncMetrics();
+  });
+  sounds.paused.subscribe((p) => {
+    metricPaused = p;
+    syncMetrics();
+  });
+
+  return {
+    engine, sounds, mixes, timer, subscription, analytics, ads, soundCache, downloads,
+    playbackMetrics
+  };
 }
 
 export const RC_API_KEY: string =
