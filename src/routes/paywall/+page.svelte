@@ -104,7 +104,7 @@
   <div class="brand-block">
     <WispMark size={64} />
     <h1 class="paywall-title">Wisp Premium</h1>
-    <p class="paywall-sub">Everything you need for a perfect night.<br>Less than half what Calm or Headspace charge.</p>
+    <p class="paywall-sub">Everything you need for a perfect night.<br>Unlock every sound. Cancel anytime.</p>
   </div>
 
   <!-- Benefits -->
