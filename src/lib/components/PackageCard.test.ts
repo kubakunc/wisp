@@ -33,19 +33,24 @@ describe('PackageCard', () => {
     expect(screen.getByText('$39.99')).toBeTruthy();
   });
 
-  it('shows "BEST VALUE · SAVE 60%" badge for featured annual', () => {
+  it('shows the savings in the badge for featured annual', () => {
+    render(PackageCard, { pkg: annualPkg, featured: true, savingsPercent: 58, onSelect: () => {} });
+    expect(screen.getByText('BEST VALUE · SAVE 58%')).toBeTruthy();
+  });
+
+  it('falls back to "BEST VALUE" when no savings is provided', () => {
     render(PackageCard, { pkg: annualPkg, featured: true, onSelect: () => {} });
-    expect(screen.getByText('BEST VALUE · SAVE 60%')).toBeTruthy();
+    expect(screen.getByText('BEST VALUE')).toBeTruthy();
   });
 
   it('does not show badge for non-featured annual', () => {
-    render(PackageCard, { pkg: annualPkg, featured: false, onSelect: () => {} });
-    expect(screen.queryByText('BEST VALUE · SAVE 60%')).toBeFalsy();
+    render(PackageCard, { pkg: annualPkg, featured: false, savingsPercent: 58, onSelect: () => {} });
+    expect(screen.queryByText(/BEST VALUE/)).toBeFalsy();
   });
 
   it('does not show badge for monthly even if featured', () => {
-    render(PackageCard, { pkg: monthlyPkg, featured: true, onSelect: () => {} });
-    expect(screen.queryByText('BEST VALUE · SAVE 60%')).toBeFalsy();
+    render(PackageCard, { pkg: monthlyPkg, featured: true, savingsPercent: 58, onSelect: () => {} });
+    expect(screen.queryByText(/BEST VALUE/)).toBeFalsy();
   });
 
   it('shows "7-day free trial" for featured annual', () => {

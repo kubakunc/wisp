@@ -9,7 +9,7 @@ export interface FakePurchasesOptions {
 }
 
 const DEFAULT_PACKAGES: PackageLite[] = [
-  { identifier: '$rc_annual', productId: 'wisp_premium_annual', priceString: '$39.99', packageType: 'ANNUAL' },
+  { identifier: '$rc_annual', productId: 'wisp_premium_annual', priceString: '$34.99', packageType: 'ANNUAL' },
   { identifier: '$rc_monthly', productId: 'wisp_premium_monthly', priceString: '$6.99', packageType: 'MONTHLY' }
 ];
 

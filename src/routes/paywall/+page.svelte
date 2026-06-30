@@ -5,6 +5,7 @@
   import { WispEvent } from '$lib/analytics/events';
   import WispMark from '$lib/components/WispMark.svelte';
   import PackageCard from '$lib/components/PackageCard.svelte';
+  import { annualSavingsPercent } from '$lib/subscription/price';
   import type { PackageLite } from '$lib/adapters/purchases';
 
   const { subscription, analytics } = app;
@@ -17,6 +18,13 @@
 
   const annualPkg = $derived(packages.find((p) => p.packageType === 'ANNUAL') ?? null);
   const monthlyPkg = $derived(packages.find((p) => p.packageType === 'MONTHLY') ?? null);
+  // Real saving of the annual plan vs paying monthly — computed from live
+  // prices so the badge can never contradict the actual numbers.
+  const savingsPercent = $derived(
+    annualPkg && monthlyPkg
+      ? annualSavingsPercent(monthlyPkg.priceString, annualPkg.priceString)
+      : null
+  );
   // No live offerings (no RevenueCat key, or no offering configured yet). We
   // only ever show REAL, purchasable packages — never fake placeholder cards.
   const unavailable = $derived(!loading && packages.length === 0);
@@ -135,6 +143,7 @@
         <PackageCard
           pkg={annualPkg}
           featured={selectedPkg?.identifier === annualPkg.identifier}
+          {savingsPercent}
           onSelect={() => { selectedPkg = annualPkg; }}
         />
       {/if}

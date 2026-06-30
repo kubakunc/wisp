@@ -1,28 +1,32 @@
 <script lang="ts">
   import type { PackageLite } from '$lib/adapters/purchases';
+  import { parsePriceNumber } from '$lib/subscription/price';
 
-  let { pkg, featured = false, onSelect }: {
+  let { pkg, featured = false, onSelect, savingsPercent = null }: {
     pkg: PackageLite;
     featured?: boolean;
     onSelect: () => void;
+    /** Percent saved vs the monthly plan, shown in the badge. null hides the number. */
+    savingsPercent?: number | null;
   } = $props();
 
   const isAnnual = $derived(pkg.packageType === 'ANNUAL');
 
-  // Derive a per-month label for annual packages as a value
-  // Try to parse the priceString (e.g. "$39.99") and divide by 12
+  // Derive a per-month label for annual packages as a value cue.
   const perMonthLabel = $derived(
     (() => {
       if (!isAnnual) return null;
-      const match = pkg.priceString.match(/[\d.,]+/);
-      if (!match) return null;
-      const annual = parseFloat(match[0].replace(',', '.'));
-      if (isNaN(annual)) return null;
+      const annual = parsePriceNumber(pkg.priceString);
+      if (annual === null) return null;
       const perMonth = annual / 12;
-      // Format to 2 decimal places with same currency symbol
+      // Format to 2 decimal places with the same currency symbol.
       const sym = pkg.priceString.replace(/[\d.,\s]+/, '').trim() || '$';
       return `${sym}${perMonth.toFixed(2)}/month`;
     })()
+  );
+
+  const badgeLabel = $derived(
+    savingsPercent != null ? `BEST VALUE · SAVE ${savingsPercent}%` : 'BEST VALUE'
   );
 </script>
 
@@ -33,7 +37,7 @@
 >
   {#if featured && isAnnual}
     <div class="badge-row">
-      <span class="badge">BEST VALUE · SAVE 60%</span>
+      <span class="badge">{badgeLabel}</span>
     </div>
   {/if}
 
