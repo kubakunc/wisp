@@ -43,6 +43,24 @@ cd android && ./gradlew bundleRelease    # -> app/build/outputs/bundle/release/a
    uploaded audio, so they were removed from `src/lib/sounds/sounds.json` for the
    release. Re-add them (with bucket `.ogg` files) when their audio is ready.
 
+## Pricing (configure in Play Console + RevenueCat — NOT in code)
+
+The app shows whatever price RevenueCat returns; these are set on the product,
+not in the repo. Chosen plan (research-backed, undercuts Calm/Headspace ~$70/yr):
+
+| Plan | Product ID | Price | Trial |
+|------|-----------|-------|-------|
+| Monthly | `wisp_premium_monthly` | **$6.99** | — |
+| Annual  | `wisp_premium_annual`  | **$34.99** | **7-day free trial** |
+
+- The paywall savings badge is computed live → reads "SAVE 58%" at these prices.
+- No lifetime tier (kept simple).
+- Localize India/SEA ~50–70% below US via **manual** Play Console price overrides
+  (Play auto-conversion is only ~21% — too shallow); NA/Western EU hold full price.
+- Steps: Play Console → Monetize → Subscriptions → create the two base plans with
+  the IDs above + a 7-day free-trial offer on annual → import into RevenueCat →
+  attach both to the `default` offering (annual as the featured package).
+
 ## Store listing (todo on Play Console)
 
 - Privacy Policy + Terms URLs (app links to `wisp.app/privacy` and `wisp.app/terms`
