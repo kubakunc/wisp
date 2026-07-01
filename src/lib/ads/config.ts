@@ -1,5 +1,5 @@
-/** Google test banner ad unit ID — replace with your real ad unit ID before release. */
-export const TEST_BANNER_AD_ID = 'ca-app-pub-3940256099942544/6300978111'; // Google test banner; replace before release
+/** Production AdMob banner ad unit ID (Wisp bottom banner). */
+export const BANNER_AD_ID = 'ca-app-pub-2450963113368391/2184735235';
 
 /** Approx height (px) the adaptive banner occupies — reserved as content padding. */
 export const BANNER_HEIGHT_PX = 56;

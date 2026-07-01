@@ -30,11 +30,11 @@ cd android && ./gradlew bundleRelease    # -> app/build/outputs/bundle/release/a
    key. The Test Store is dev-only: the SDK is unsuitable for / crashes in
    production and Play rejects it. Replace with the **`goog_` production** key
    before shipping (and re-`npm run build`).
-2. **AdMob** — still using Google **test** IDs:
-   - App ID in `android/app/src/main/AndroidManifest.xml`
-     (`ca-app-pub-3940256099942544~3347511713`).
-   - Banner unit `TEST_BANNER_AD_ID` in `src/lib/ads/config.ts`.
-   Replace both with the real AdMob app ID + ad unit ID.
+2. ✅ **AdMob** — DONE. Production IDs wired:
+   - App ID `ca-app-pub-2450963113368391~2789416061` in
+     `android/app/src/main/AndroidManifest.xml`.
+   - Banner unit `ca-app-pub-2450963113368391/2184735235` as `BANNER_AD_ID` in
+     `src/lib/ads/config.ts`.
 3. ✅ **Firebase / Analytics** — DONE. `android/app/google-services.json` added
    (project `wisp-47e62`, package `com.velologiclabs.wisp`); the Gradle plugin
    applies and the release AAB builds with it. Analytics (incl. the new

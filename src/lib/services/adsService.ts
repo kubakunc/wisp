@@ -1,5 +1,5 @@
 import type { AdMobAdapter, ConsentResult } from '$lib/adapters/admob';
-import { TEST_BANNER_AD_ID } from '$lib/ads/config';
+import { BANNER_AD_ID } from '$lib/ads/config';
 
 export interface AdsServiceOpts {
   adId?: string;
@@ -7,7 +7,7 @@ export interface AdsServiceOpts {
 }
 
 export function createAdsService(adapter: AdMobAdapter, opts?: AdsServiceOpts) {
-  const adId = opts?.adId ?? TEST_BANNER_AD_ID;
+  const adId = opts?.adId ?? BANNER_AD_ID;
   // Bottom margin (px) the banner is lifted above the bottom edge so it floats
   // above the bottom menu. The patched AdMob plugin honors this on Android 15+.
   const marginBottomPx = opts?.marginBottomPx ?? 0;

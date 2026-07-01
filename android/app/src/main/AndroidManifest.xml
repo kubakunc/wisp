@@ -47,10 +47,10 @@
             </intent-filter>
         </service>
 
-        <!-- AdMob app id (Google sample/test id — replace with the real one before release) -->
+        <!-- AdMob app id (Wisp production) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-2450963113368391~2789416061" />
     </application>
 
     <!-- Permissions -->
